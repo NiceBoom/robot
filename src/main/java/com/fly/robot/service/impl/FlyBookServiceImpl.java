@@ -101,7 +101,7 @@ public class FlyBookServiceImpl implements FlyBookService {
      * 发送天气消息
      *
      * @param sendWeatherMsgApi 天气机器人hook链接
-     * @param weatherMsg        组装好的提琴器消息
+     * @param weatherMsg        组装好的天气消息
      * @return 返回的发送情况json
      */
     private String sendWeatherMsg(String sendWeatherMsgApi, String weatherMsg) {

@@ -1,5 +1,6 @@
 package com.fly.robot.pojo;
 
+
 public class Casts {
     private String date;
 

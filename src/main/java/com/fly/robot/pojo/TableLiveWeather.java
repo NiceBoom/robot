@@ -1,36 +1,31 @@
 package com.fly.robot.pojo;
 
 import javax.persistence.*;
+import java.time.LocalDateTime;
 
 /**
- *  mysql中的weather表格
- *  此表格仅供链接到mysql测试用
- *  不是正式的存储位置
+ * mysql中的tb_live_weather表格
  */
 @Entity
-@Table(name = "weather")
-public class Weather {
+@Table(name = "tb_live_weather")
+public class TableLiveWeather {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
 
     //自增主键weather_id
-    @Column(name = "weather_id")
+    @Column(name = "id")
     private Integer weatherId;
 
     //天气报告数据
-    @Column(name = "weather_repo")
+    @Column(name = "weather")
     private String weatherRepo;
 
     //创建时间
     @Column(name = "create_at")
-    private String createAt;
+    private LocalDateTime createAt;
 
-    public Weather(Integer weatherId, String weatherRepo, String createAt) {
-        this.weatherId = weatherId;
-        this.weatherRepo = weatherRepo;
-        this.createAt = createAt;
-    }
-    public Weather(){
+    public TableLiveWeather() {
     }
 
     public Integer getWeatherId() {
@@ -49,11 +44,11 @@ public class Weather {
         this.weatherRepo = weatherRepo;
     }
 
-    public String getCreateAt() {
+    public LocalDateTime getCreateAt() {
         return createAt;
     }
 
-    public void setCreateAt(String createAt) {
+    public void setCreateAt(LocalDateTime createAt) {
         this.createAt = createAt;
     }
 }
