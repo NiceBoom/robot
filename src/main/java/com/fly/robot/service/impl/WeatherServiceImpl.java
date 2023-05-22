@@ -67,7 +67,7 @@ public class WeatherServiceImpl implements WeatherService {
             e.printStackTrace();
         }
 
-        return "get weather fail";
+        return "get Weather fail";
     }
 
 

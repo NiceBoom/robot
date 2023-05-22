@@ -94,7 +94,7 @@ public class FlyBookServiceImpl implements FlyBookService {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return "send forecast weather fail";
+        return "send forecast Weather fail";
     }
 
     /**
