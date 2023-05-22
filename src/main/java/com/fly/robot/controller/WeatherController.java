@@ -15,7 +15,11 @@ public class WeatherController {
     @Autowired
     private WeatherService weatherService;
 
-    @GetMapping
+    /**
+     * 获取实时天气情况
+     * @return 天气JSON
+     */
+    @GetMapping("/findLiveWeather")
     public String findLiveWeather(){
 
         String liveWeather = weatherService.findLiveWeather();
@@ -23,5 +27,12 @@ public class WeatherController {
         return liveWeather;
     }
 
+    @GetMapping("/findForecastWeather")
+    public String findForecastWeather(){
+
+        String forecastWeather = weatherService.findForecastWeather();
+
+        return forecastWeather;
+    }
 
 }

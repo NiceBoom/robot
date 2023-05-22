@@ -9,6 +9,8 @@ public class ApiCode {
 
     //高德开放APICode
     public static final String WEATHER_API_KEY = "4516693f55a712c8d8c992aaa2dd63a3";
+    public static final String WEATHER_API_URL = "https://restapi.amap.com/v3/weather/weatherInfo";
+    public static final String WEATHER_API_CITY_CODE = "110000";
     public static final String GET_LIVE_WEATHER = "base";
     public static final String GET_FORECAST_WEATHER = "all";
 
