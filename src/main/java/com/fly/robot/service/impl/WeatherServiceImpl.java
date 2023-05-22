@@ -35,7 +35,7 @@ public class WeatherServiceImpl implements WeatherService {
         return forecastWeather;
     }
 
-    public String sendRequestGetWeather(String APIkey, String cityCode, String extensions) {
+    private String sendRequestGetWeather(String APIkey, String cityCode, String extensions) {
 
         //拼接url链接与参数
         String requestUrlString =
