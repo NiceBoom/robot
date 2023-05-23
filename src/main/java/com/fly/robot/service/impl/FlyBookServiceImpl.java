@@ -1,6 +1,8 @@
 package com.fly.robot.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fly.robot.dao.TableForecastWeatherRepository;
+import com.fly.robot.dao.TableLiveWeatherRepository;
 import com.fly.robot.pojo.*;
 import com.fly.robot.service.FlyBookService;
 import com.fly.robot.service.WeatherService;
@@ -18,6 +20,12 @@ public class FlyBookServiceImpl implements FlyBookService {
 
     @Autowired
     private WeatherService weatherService;
+
+    @Autowired
+    private TableLiveWeatherRepository tableLiveWeatherRepository;
+
+    @Autowired
+    private TableForecastWeatherRepository tableForecastWeatherRepository;
 
     @Value("${feishu.robot-webhook-address}")
     private String robotWebHookAddress;//读取飞书robot web hook 地址
@@ -42,9 +50,11 @@ public class FlyBookServiceImpl implements FlyBookService {
      */
     @Override
     public String sendLiveWeatherMsg() {
+
         try {
-            //获取实时天气数据
-            String liveWeather = weatherService.findLiveWeather(weatherApiKey, cityCode, liveWeatherCode);
+            //从mysql获取最新一条实时天气数据
+            TableLiveWeather liveWeatherFromMysql = tableLiveWeatherRepository.findFirstByOrderByCreateAtDesc();
+            String liveWeather = liveWeatherFromMysql.getLiveWeather();
 
             //格式化实时天气数据，转换成DTO
             ObjectMapper mapper = new ObjectMapper();
@@ -71,9 +81,10 @@ public class FlyBookServiceImpl implements FlyBookService {
     @Override
     public String sendForecastWeatherMsg() {
         try {
-            //获取未来三天天气预报数据
-            String forecastWeather = weatherService.findForecastWeather(weatherApiKey, cityCode, forecastWeatherCode);
-
+            //从mysql查找最新的一条天气预报数据
+            TableForecastWeather forecastWeatherFromMysql = tableForecastWeatherRepository.findFirstByOrderByCreateAtDesc();
+            //获取天气预报信息
+            String forecastWeather = forecastWeatherFromMysql.getForecastWeather();
             //格式化天气预报数据，转换成DTO
             ObjectMapper mapper = new ObjectMapper();
             ForecastWeatherDto forecastWeatherDto = mapper.readValue(forecastWeather, ForecastWeatherDto.class);

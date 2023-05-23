@@ -7,7 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface TableForecastWeatherRepository extends JpaRepository<TableForecastWeather, Long> {
-
-    //查找所有天气预报
-    List<TableForecastWeather> findAll();
+    //查找最新的一条天气预报数据
+    TableForecastWeather findFirstByOrderByCreateAtDesc();
 }

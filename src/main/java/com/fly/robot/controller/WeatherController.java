@@ -22,6 +22,14 @@ public class WeatherController {
 
     @Autowired
     private WeatherService weatherService;
+    private final TableLiveWeatherRepository liveWeatherRepository;
+    private final TableForecastWeatherRepository forecastWeatherRepository;
+
+    @Autowired
+    public WeatherController(TableLiveWeatherRepository liveWeatherRepository, TableForecastWeatherRepository forecastWeatherRepository) {
+        this.liveWeatherRepository = liveWeatherRepository;
+        this.forecastWeatherRepository = forecastWeatherRepository;
+    }
 
     @Value("${feishu.appid}")
     private String feishuAppId; //从配置文件读取feishu.appid
@@ -64,54 +72,37 @@ public class WeatherController {
     @GetMapping("/findForecastWeatherToMysql")
     public String findForecastWeatherToMysql() {
         return weatherService.findForecastWeatherToMysql(weatherApiKey, cityCode, forecastWeatherCode);
-
     }
 
     /**
      * 从高德API获取实时天气情况
-     *
      * @return 天气JSON
      */
     @GetMapping("/findLiveWeather")
     public String findLiveWeather() {
-
         String liveWeather = weatherService.findLiveWeather(weatherApiKey, cityCode, liveWeatherCode);
-
         return liveWeather;
     }
 
     /**
      * 从高德API获取未来天气情况
-     *
      * @return 天气JSON
      */
     @GetMapping("/findForecastWeather")
     public String findForecastWeather() {
-
         String forecastWeather = weatherService.findForecastWeather(weatherApiKey, cityCode, forecastWeatherCode);
-
         return forecastWeather;
     }
 
-    private final TableLiveWeatherRepository liveWeatherRepository;
-    private final TableForecastWeatherRepository forecastWeatherRepository;
-
-    @Autowired
-    public WeatherController(TableLiveWeatherRepository liveWeatherRepository, TableForecastWeatherRepository forecastWeatherRepository) {
-        this.liveWeatherRepository = liveWeatherRepository;
-        this.forecastWeatherRepository = forecastWeatherRepository;
-    }
-
-    //注入查找实时天气表格
-    @GetMapping("/getLiveWeather")
+    //查找所有在mysql中的实时天气数据
+    @GetMapping("/getAllLiveWeatherFromMysql")
     public List<TableLiveWeather> getLiveWeather() {
         return liveWeatherRepository.findAll();
     }
 
-    //注入查找天气预报表格
-    @GetMapping("/getForecastWeather")
+    //查找所有在mysql中的天气预报数据
+    @GetMapping("/getAllForecastWeatherFormMysql")
     public List<TableForecastWeather> getForecastWeather() {
         return forecastWeatherRepository.findAll();
     }
-
 }
