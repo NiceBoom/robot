@@ -2,6 +2,7 @@ package com.fly.robot.controller;
 
 import com.fly.robot.service.FlyBookService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -15,10 +16,35 @@ public class FlyBookController {
     @Autowired
     private FlyBookService flyBookService;
 
+
+    @Value("${feishu.appid}")
+    private String feishuAppId; //从配置文件读取feishu.appid
+
+    @Value("${feishu.app-secret}")
+    private String feishuAppSecret;//从配置文件读取飞书secret
+
+    @Value("${feishu.robot-webhook-address}")
+    private String robotWebHookAddress;//读取飞书robot web hook 地址
+
+    @Value("${gaode.weather-api-key}")
+    private String weatherApiKey; //读取高德ApiKey
+
+    @Value("${gaode.weather-api-url}")
+    private String weatherApiUrl; //读取高德api url地址
+
+    @Value("${gaode.weather-api-city-code}")
+    private String cityCode;//城市代码
+
+    @Value("${gaode.get-live-weather-code}")
+    private String liveWeatherCode;//实时天气代码
+
+    @Value("${gaode.get-forecast-weather-code}")
+    private String forecastWeatherCode;//天气预报代码
+
     //发送实时天气数据消息
-    //每天早八点半，每隔一小时发一次，一直到晚上21.30 发送实时天气数据
+    //每天早八点35，每隔一小时发一次，一直到晚上21.30 发送实时天气数据
     //或者也可以手动发送
-    @Scheduled(cron = "0 30 8,9,10,11,12,13,14,15,16,17,18,19,20,21 * * ? *")
+    @Scheduled(cron = "0 35 8,9,10,11,12,13,14,15,16,17,18,19,20,21 * * ? *")
     @PostMapping("/sendLiveWeatherMsg")
     String sendLiveWeatherMsg(){
         //发送实时天气数据消息
@@ -29,7 +55,7 @@ public class FlyBookController {
     //发送未来天气预报情况
     //每天9:00、10:00、12:00、13:00、19:00、20:00自动发送未来的天气预报
     //或者也可以手动发送
-    @Scheduled(cron = "0 0 9,10,12,13,19,20 * * ? *")
+    @Scheduled(cron = "0 10 9,10,12,13,19,20 * * ? *")
     @PostMapping("/sendForecastWeatherMsg")
     String sendForecastWeatherMsg(){
 

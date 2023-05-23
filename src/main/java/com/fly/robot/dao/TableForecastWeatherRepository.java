@@ -1,6 +1,7 @@
 package com.fly.robot.dao;
 
 import com.fly.robot.pojo.TableForecastWeather;
+import com.fly.robot.pojo.TableLiveWeather;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

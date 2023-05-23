@@ -1,18 +1,16 @@
 package com.fly.robot.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fly.robot.entity.ApiCode;
 import com.fly.robot.pojo.*;
 import com.fly.robot.service.FlyBookService;
 import com.fly.robot.service.WeatherService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URLConnection;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @Service
@@ -20,6 +18,22 @@ public class FlyBookServiceImpl implements FlyBookService {
 
     @Autowired
     private WeatherService weatherService;
+
+    @Value("${feishu.robot-webhook-address}")
+    private String robotWebHookAddress;//读取飞书robot web hook 地址
+
+
+    @Value("${gaode.weather-api-city-code}")
+    private String cityCode;//城市代码
+
+    @Value("${gaode.get-live-weather-code}")
+    private String liveWeatherCode;//实时天气代码
+
+    @Value("${gaode.get-forecast-weather-code}")
+    private String forecastWeatherCode;//天气预报代码
+
+    @Value("${gaode.weather-api-key}")
+    private String weatherApiKey; //读取高德ApiKey
 
     /**
      * 发送实时天气数据
@@ -30,7 +44,7 @@ public class FlyBookServiceImpl implements FlyBookService {
     public String sendLiveWeatherMsg() {
         try {
             //获取实时天气数据
-            String liveWeather = weatherService.findLiveWeather();
+            String liveWeather = weatherService.findLiveWeather(weatherApiKey, cityCode, liveWeatherCode);
 
             //格式化实时天气数据，转换成DTO
             ObjectMapper mapper = new ObjectMapper();
@@ -44,7 +58,7 @@ public class FlyBookServiceImpl implements FlyBookService {
             String liveWeatherMsg = "您当前所在的城市为" + lives.getCity() + "，当前天气：" + lives.getWeather() + "，实时气温为" + lives.getTemperature() + "摄氏度，空气湿度为" + lives.getHumidity() + "%，" + lives.getWinddirection() + "风" + lives.getWindpower() + "级。更新时间为" + time + "。";
 
             //发送实时天气消息
-            String weatherMsg = sendWeatherMsg(ApiCode.ROBOT_WEBHOOK_ADDRESS, liveWeatherMsg);
+            String weatherMsg = sendWeatherMsg(robotWebHookAddress, liveWeatherMsg);
 
             return weatherMsg;
         } catch (Exception e) {
@@ -58,7 +72,7 @@ public class FlyBookServiceImpl implements FlyBookService {
     public String sendForecastWeatherMsg() {
         try {
             //获取未来三天天气预报数据
-            String forecastWeather = weatherService.findForecastWeather();
+            String forecastWeather = weatherService.findForecastWeather(weatherApiKey, cityCode, forecastWeatherCode);
 
             //格式化天气预报数据，转换成DTO
             ObjectMapper mapper = new ObjectMapper();
@@ -71,24 +85,24 @@ public class FlyBookServiceImpl implements FlyBookService {
             //拼接天气预报消息
             String forecastWeatherMsg =
                     "您当前所在的城市为" + forecasts.get(0).getCity() + "。天气预报更新时间为" + time + "。下面是详细的天气情况:" +
-                            weatherCasts.get(0).getDate().substring(0, 4) + "年" +weatherCasts.get(0).getDate().substring(5, 7) + "月" + weatherCasts.get(0).getDate().substring(8, 10) + "日" +
+                            weatherCasts.get(0).getDate().substring(0, 4) + "年" + weatherCasts.get(0).getDate().substring(5, 7) + "月" + weatherCasts.get(0).getDate().substring(8, 10) + "日" +
                             "的白天天气情况为" + weatherCasts.get(0).getDayweather() + "，室外气温为" + weatherCasts.get(0).getDaytemp() + "摄氏度，风向为" +
                             weatherCasts.get(0).getDaywind() + "风，风力" + weatherCasts.get(0).getDaypower() + "级。夜间天气为" + weatherCasts.get(0).getNightweather() + "，室外气温" +
                             weatherCasts.get(0).getNighttemp() + "摄氏度，风向为" + weatherCasts.get(0).getNightwind() + "风，风力" + weatherCasts.get(0).getNightpower() + "级。" +
-                            weatherCasts.get(1).getDate().substring(0, 4) + "年" +weatherCasts.get(1).getDate().substring(5, 7) + "月" + weatherCasts.get(1).getDate().substring(8, 10) + "日" +
+                            weatherCasts.get(1).getDate().substring(0, 4) + "年" + weatherCasts.get(1).getDate().substring(5, 7) + "月" + weatherCasts.get(1).getDate().substring(8, 10) + "日" +
                             "的白天天气情况为" + weatherCasts.get(1).getDayweather() + "，室外气温为" + weatherCasts.get(1).getDaytemp() + "摄氏度，风向为" +
                             weatherCasts.get(1).getDaywind() + "风，风力" + weatherCasts.get(1).getDaypower() + "级。夜间天气为" + weatherCasts.get(1).getNightweather() + "，室外气温" +
                             weatherCasts.get(1).getNighttemp() + "摄氏度，风向为" + weatherCasts.get(1).getNightwind() + "风，风力" + weatherCasts.get(1).getNightpower() + "级。" +
-                            weatherCasts.get(2).getDate().substring(0, 4) + "年" +weatherCasts.get(2).getDate().substring(5, 7) + "月" + weatherCasts.get(2).getDate().substring(8, 10) + "日" +
+                            weatherCasts.get(2).getDate().substring(0, 4) + "年" + weatherCasts.get(2).getDate().substring(5, 7) + "月" + weatherCasts.get(2).getDate().substring(8, 10) + "日" +
                             "的白天天气情况为" + weatherCasts.get(2).getDayweather() + "，室外气温为" + weatherCasts.get(2).getDaytemp() + "摄氏度，风向为" +
                             weatherCasts.get(2).getDaywind() + "风，风力" + weatherCasts.get(2).getDaypower() + "级。夜间天气为" + weatherCasts.get(2).getNightweather() + "，室外气温" +
                             weatherCasts.get(2).getNighttemp() + "摄氏度，风向为" + weatherCasts.get(2).getNightwind() + "风，风力" + weatherCasts.get(2).getNightpower() + "级。" +
-                            weatherCasts.get(3).getDate().substring(0, 4) + "年" +weatherCasts.get(3).getDate().substring(5, 7) + "月" + weatherCasts.get(3).getDate().substring(8, 10) + "日" +
+                            weatherCasts.get(3).getDate().substring(0, 4) + "年" + weatherCasts.get(3).getDate().substring(5, 7) + "月" + weatherCasts.get(3).getDate().substring(8, 10) + "日" +
                             "的白天天气情况为" + weatherCasts.get(3).getDayweather() + "，室外气温为" + weatherCasts.get(3).getDaytemp() + "摄氏度，风向为" +
                             weatherCasts.get(3).getDaywind() + "风，风力" + weatherCasts.get(3).getDaypower() + "级。夜间天气为" + weatherCasts.get(3).getNightweather() + "，室外气温" +
                             weatherCasts.get(3).getNighttemp() + "摄氏度，风向为" + weatherCasts.get(3).getNightwind() + "风，风力" + weatherCasts.get(3).getNightpower() + "级。";
 
-            String weatherMsg = sendWeatherMsg(ApiCode.ROBOT_WEBHOOK_ADDRESS, forecastWeatherMsg);
+            String weatherMsg = sendWeatherMsg(robotWebHookAddress, forecastWeatherMsg);
 
             return weatherMsg;
         } catch (Exception e) {

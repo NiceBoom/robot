@@ -17,9 +17,17 @@ public class TableLiveWeather {
     @Column(name = "id")
     private Integer weatherId;
 
+    //城市代码
+    @Column(name = "city_id")
+    private String cityId;
+
+    //城市名称
+    @Column(name = "city_name")
+    private String cityName;
+
     //天气报告数据
-    @Column(name = "weather")
-    private String weatherRepo;
+    @Column(name = "live_weather")
+    private String liveWeather;
 
     //创建时间
     @Column(name = "create_at")
@@ -36,12 +44,28 @@ public class TableLiveWeather {
         this.weatherId = weatherId;
     }
 
-    public String getWeatherRepo() {
-        return weatherRepo;
+    public String getCityId() {
+        return cityId;
     }
 
-    public void setWeatherRepo(String weatherRepo) {
-        this.weatherRepo = weatherRepo;
+    public void setCityId(String cityId) {
+        this.cityId = cityId;
+    }
+
+    public String getCityName() {
+        return cityName;
+    }
+
+    public void setCityName(String cityName) {
+        this.cityName = cityName;
+    }
+
+    public String getLiveWeather() {
+        return liveWeather;
+    }
+
+    public void setLiveWeather(String liveWeather) {
+        this.liveWeather = liveWeather;
     }
 
     public LocalDateTime getCreateAt() {
