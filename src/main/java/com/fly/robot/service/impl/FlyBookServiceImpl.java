@@ -3,6 +3,8 @@ package com.fly.robot.service.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fly.robot.dao.TableForecastWeatherRepository;
 import com.fly.robot.dao.TableLiveWeatherRepository;
+import com.fly.robot.entity.Result;
+import com.fly.robot.entity.StatusCode;
 import com.fly.robot.pojo.*;
 import com.fly.robot.service.FlyBookService;
 import com.fly.robot.service.WeatherService;
@@ -19,38 +21,18 @@ import java.util.List;
 public class FlyBookServiceImpl implements FlyBookService {
 
     @Autowired
-    private WeatherService weatherService;
-
-    @Autowired
     private TableLiveWeatherRepository tableLiveWeatherRepository;
 
     @Autowired
     private TableForecastWeatherRepository tableForecastWeatherRepository;
 
-    @Value("${feishu.robot-webhook-address}")
-    private String robotWebHookAddress;//读取飞书robot web hook 地址
-
-
-    @Value("${gaode.weather-api-city-code}")
-    private String cityCode;//城市代码
-
-    @Value("${gaode.get-live-weather-code}")
-    private String liveWeatherCode;//实时天气代码
-
-    @Value("${gaode.get-forecast-weather-code}")
-    private String forecastWeatherCode;//天气预报代码
-
-    @Value("${gaode.weather-api-key}")
-    private String weatherApiKey; //读取高德ApiKey
-
     /**
-     * 发送实时天气数据
-     *
-     * @return 返回的发送情况
+     * 发送实时天气数据消息
+     * @param robotWebHookAddress 消息机器人web hook地址
+     * @return
      */
     @Override
-    public String sendLiveWeatherMsg() {
-
+    public Result sendLiveWeatherMsg(String robotWebHookAddress) {
         try {
             //从mysql获取最新一条实时天气数据
             TableLiveWeather liveWeatherFromMysql = tableLiveWeatherRepository.findFirstByOrderByCreateAtDesc();
@@ -60,26 +42,33 @@ public class FlyBookServiceImpl implements FlyBookService {
             ObjectMapper mapper = new ObjectMapper();
             LiveWeatherDto liveWeatherDto = mapper.readValue(liveWeather, LiveWeatherDto.class);
             Lives lives = liveWeatherDto.getLives().get(0);
-            //时间截取转换格式
 
+            //时间截取转换格式
             String time = lives.getReporttime().substring(0, 4) + "年" + lives.getReporttime().substring(5, 7) + "月" + lives.getReporttime().substring(8, 10) + "日" +
                     lives.getReporttime().substring(11, 13) + "时" + lives.getReporttime().substring(14, 16) + "分";
+
             //拼接天气消息
             String liveWeatherMsg = "您当前所在的城市为" + lives.getCity() + "，当前天气：" + lives.getWeather() + "，实时气温为" + lives.getTemperature() + "摄氏度，空气湿度为" + lives.getHumidity() + "%，" + lives.getWinddirection() + "风" + lives.getWindpower() + "级。更新时间为" + time + "。";
 
-            //发送实时天气消息
-            String weatherMsg = sendWeatherMsg(robotWebHookAddress, liveWeatherMsg);
-
-            return weatherMsg;
+            return sendWeatherMsg(robotWebHookAddress, liveWeatherMsg);
         } catch (Exception e) {
             e.printStackTrace();
         }
-
-        return "sendMsgFail";
+        //发送实时天气失败代码
+        Result<Object> failResult = new Result<>();
+        failResult.setFlag(false);
+        failResult.setMessage("send live weather msg fail");
+        failResult.setCode(StatusCode.ERROR);
+        return failResult;
     }
 
+    /**
+     * 发送未来天气预报消息
+     * @param robotWebHookAddress 消息机器人web hook地址
+     * @return
+     */
     @Override
-    public String sendForecastWeatherMsg() {
+    public Result sendForecastWeatherMsg(String robotWebHookAddress) {
         try {
             //从mysql查找最新的一条天气预报数据
             TableForecastWeather forecastWeatherFromMysql = tableForecastWeatherRepository.findFirstByOrderByCreateAtDesc();
@@ -113,23 +102,25 @@ public class FlyBookServiceImpl implements FlyBookService {
                             weatherCasts.get(3).getDaywind() + "风，风力" + weatherCasts.get(3).getDaypower() + "级。夜间天气为" + weatherCasts.get(3).getNightweather() + "，室外气温" +
                             weatherCasts.get(3).getNighttemp() + "摄氏度，风向为" + weatherCasts.get(3).getNightwind() + "风，风力" + weatherCasts.get(3).getNightpower() + "级。";
 
-            String weatherMsg = sendWeatherMsg(robotWebHookAddress, forecastWeatherMsg);
-
-            return weatherMsg;
+            return sendWeatherMsg(robotWebHookAddress, forecastWeatherMsg);
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return "send forecast Weather fail";
+        //发送天气预报失败代码
+        Result<Object> failResult = new Result<>();
+        failResult.setFlag(false);
+        failResult.setMessage("send forecast weather msg fail");
+        failResult.setCode(StatusCode.ERROR);
+        return failResult;
     }
 
     /**
      * 发送天气消息
-     *
      * @param sendWeatherMsgApi 天气机器人hook链接
      * @param weatherMsg        组装好的天气消息
      * @return 返回的发送情况json
      */
-    private String sendWeatherMsg(String sendWeatherMsgApi, String weatherMsg) {
+    private Result sendWeatherMsg(String sendWeatherMsgApi, String weatherMsg) {
         try {
             //得到connection对象
             URL httpUrl = new URL(sendWeatherMsgApi);
@@ -162,17 +153,24 @@ public class FlyBookServiceImpl implements FlyBookService {
                 while ((line = reader.readLine()) != null) {
                     buffer.append(line);
                 }
-
                 reader.close();
                 System.out.println(buffer.toString());
                 // 断开连接
                 connection.disconnect();
 
-                return buffer.toString();
+                Result<Object> sendWeatherMsgResult = new Result<>();
+                sendWeatherMsgResult.setData(buffer.toString());
+
+                return sendWeatherMsgResult;
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return "send msg fail";
+        //发送消息失败代码
+        Result<Object> failResult = new Result<>();
+        failResult.setFlag(false);
+        failResult.setMessage("send forecast weather msg fail");
+        failResult.setCode(StatusCode.ERROR);
+        return failResult;
     }
 }

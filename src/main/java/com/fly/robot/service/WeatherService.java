@@ -1,5 +1,7 @@
 package com.fly.robot.service;
 
+import com.fly.robot.entity.Result;
+
 public interface WeatherService {
 
     /**
@@ -9,7 +11,7 @@ public interface WeatherService {
      * @param weatherCode 天气代码（实时天气或者未来天气预报）
      * @return
      */
-    String findLiveWeatherSaveToMysql(String weatherApiKey, String cityCode, String weatherCode);
+    Result findLiveWeatherSaveToMysql(String weatherApiKey, String cityCode, String weatherCode);
 
     /**
      * 获取天气预报并保存到mysql中
@@ -18,7 +20,7 @@ public interface WeatherService {
      * @param weatherCode 天气代码（实时天气或者未来天气预报）
      * @return
      */
-    String findForecastWeatherToMysql(String weatherApiKey, String cityCode, String weatherCode);
+    Result findForecastWeatherToMysql(String weatherApiKey, String cityCode, String weatherCode);
 
     /**
      * 获取实时天气并保存到mysql中
@@ -27,7 +29,7 @@ public interface WeatherService {
      * @param weatherCode 天气代码（实时天气或者未来天气预报）
      * @return
      */
-    String findLiveWeather(String weatherApiKey, String cityCode, String weatherCode);
+    Result findLiveWeather(String weatherApiKey, String cityCode, String weatherCode);
 
     /**
      * 获取天气预报并保存到mysql中
@@ -36,5 +38,5 @@ public interface WeatherService {
      * @param weatherCode 天气代码（实时天气或者未来天气预报）
      * @return
      */
-    String findForecastWeather(String weatherApiKey, String cityCode, String weatherCode);
+    Result findForecastWeather(String weatherApiKey, String cityCode, String weatherCode);
 }

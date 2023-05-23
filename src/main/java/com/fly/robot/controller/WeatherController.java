@@ -2,6 +2,7 @@ package com.fly.robot.controller;
 
 import com.fly.robot.dao.TableForecastWeatherRepository;
 import com.fly.robot.dao.TableLiveWeatherRepository;
+import com.fly.robot.entity.Result;
 import com.fly.robot.pojo.TableForecastWeather;
 import com.fly.robot.pojo.TableLiveWeather;
 import com.fly.robot.service.WeatherService;
@@ -31,20 +32,8 @@ public class WeatherController {
         this.forecastWeatherRepository = forecastWeatherRepository;
     }
 
-    @Value("${feishu.appid}")
-    private String feishuAppId; //从配置文件读取feishu.appid
-
-    @Value("${feishu.app-secret}")
-    private String feishuAppSecret;//从配置文件读取飞书secret
-
-    @Value("${feishu.robot-webhook-address}")
-    private String robotWebHookAddress;//读取飞书robot web hook 地址
-
     @Value("${gaode.weather-api-key}")
     private String weatherApiKey; //读取高德ApiKey
-
-    @Value("${gaode.weather-api-url}")
-    private String weatherApiUrl; //读取高德api url地址
 
     @Value("${gaode.weather-api-city-code}")
     private String cityCode;//城市代码
@@ -61,7 +50,7 @@ public class WeatherController {
     //也可以手动获取实时天气
     @Scheduled(cron = "0 30 8,9,10,11,12,13,14,15,16,17,18,19,20,21 * * ? *")
     @GetMapping("/findLiveWeatherSaveToMysql")
-    public String findLiveWeatherSaveToMysql() {
+    public Result findLiveWeatherSaveToMysql() {
         return weatherService.findLiveWeatherSaveToMysql(weatherApiKey, cityCode, liveWeatherCode);
     }
 
@@ -70,8 +59,10 @@ public class WeatherController {
     //也可以手动获取天气预报
     @Scheduled(cron = "0 0 9,10,12,13,19,20 * * ? *")
     @GetMapping("/findForecastWeatherToMysql")
-    public String findForecastWeatherToMysql() {
+    public Result findForecastWeatherToMysql() {
+
         return weatherService.findForecastWeatherToMysql(weatherApiKey, cityCode, forecastWeatherCode);
+
     }
 
     /**
@@ -79,9 +70,10 @@ public class WeatherController {
      * @return 天气JSON
      */
     @GetMapping("/findLiveWeather")
-    public String findLiveWeather() {
-        String liveWeather = weatherService.findLiveWeather(weatherApiKey, cityCode, liveWeatherCode);
-        return liveWeather;
+    public Result findLiveWeather() {
+
+        return weatherService.findLiveWeather(weatherApiKey, cityCode, liveWeatherCode);
+
     }
 
     /**
@@ -89,20 +81,29 @@ public class WeatherController {
      * @return 天气JSON
      */
     @GetMapping("/findForecastWeather")
-    public String findForecastWeather() {
-        String forecastWeather = weatherService.findForecastWeather(weatherApiKey, cityCode, forecastWeatherCode);
-        return forecastWeather;
+    public Result findForecastWeather() {
+
+        return weatherService.findForecastWeather(weatherApiKey, cityCode, forecastWeatherCode);
+
     }
 
     //查找所有在mysql中的实时天气数据
     @GetMapping("/getAllLiveWeatherFromMysql")
-    public List<TableLiveWeather> getLiveWeather() {
-        return liveWeatherRepository.findAll();
+    public Result getAllLiveWeatherFromMysql() {
+
+        List<TableLiveWeather> allLiveWeatherFromMysql = liveWeatherRepository.findAll();
+        Result<Object> getAllLiveWeatherResult = new Result<>();
+        getAllLiveWeatherResult.setData(allLiveWeatherFromMysql);
+
+        return getAllLiveWeatherResult;
     }
 
     //查找所有在mysql中的天气预报数据
     @GetMapping("/getAllForecastWeatherFormMysql")
-    public List<TableForecastWeather> getForecastWeather() {
-        return forecastWeatherRepository.findAll();
+    public Result getAllForecastWeatherFormMysql() {
+        List<TableForecastWeather> allForecastWeatherFromMysql = forecastWeatherRepository.findAll();
+        Result<Object> getAllForecastWeatherResult = new Result<>();
+        getAllForecastWeatherResult.setData(allForecastWeatherFromMysql);
+        return getAllForecastWeatherResult;
     }
 }

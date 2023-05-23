@@ -1,15 +1,20 @@
 package com.fly.robot.service;
 
+import com.fly.robot.entity.Result;
+
 public interface FlyBookService {
-    /**
-     * 发送实时天气数据
-     * @return 发送消息返回的数据
-     */
-    String sendLiveWeatherMsg();
 
     /**
-     * 发送未来三天天气预报
-     * @return 发送消息返回的数据
+     * 发送实时天气消息
+     * @param robotWebHookAddress 消息机器人web hook地址
+     * @return
      */
-    String sendForecastWeatherMsg();
+    Result sendLiveWeatherMsg(String robotWebHookAddress);
+
+    /**
+     * 发送未来天气预报消息
+     * @param robotWebHookAddress 消息机器人web hook地址
+     * @return
+     */
+    Result sendForecastWeatherMsg(String robotWebHookAddress);
 }
