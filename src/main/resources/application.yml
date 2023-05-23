@@ -5,6 +5,11 @@ spring:
     password: root
   jpa:
     database-platform: org.hibernate.dialect.MySQL57Dialect
+  redis:
+    host: 192.168.200.128
+    port: 6379
+    database: 1
+    connect-timeout: 10000
 feishu:
   appid: cli_a4e09ae4d7399013
   app-secret: o9wc9JEsBA9YeP7eAxNd2boKJ2BOByYW
