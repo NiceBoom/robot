@@ -173,4 +173,19 @@ public class FlyBookServiceImpl implements FlyBookService {
         failResult.setCode(StatusCode.ERROR);
         return failResult;
     }
+
+
+    /**
+     *  获取TenantAccessToken
+     * @param getTenantAccessTokenAddress 获取TenantAccessTokenAddress链接地址
+     * @param robotAppId
+     * @param robotAppSecret
+     * @return
+     */
+    @Override
+    public Result getTenantAccessToken(String getTenantAccessTokenAddress, String robotAppId, String robotAppSecret) {
+
+
+        return null;
+    }
 }

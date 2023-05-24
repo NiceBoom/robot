@@ -17,4 +17,12 @@ public interface FlyBookService {
      * @return
      */
     Result sendForecastWeatherMsg(String robotWebHookAddress);
+
+    /**
+     * @param getTenantAccessTokenAddress 获取TenantAccessTokenAddress链接地址
+     * @param robotAppId
+     * @param robotAppSecret
+     * @return
+     */
+    Result getTenantAccessToken(String getTenantAccessTokenAddress, String robotAppId, String robotAppSecret);
 }

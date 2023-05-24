@@ -1,4 +1,7 @@
 spring:
+  task:
+    scheduling:
+      enable: ture
   datasource:
     url: jdbc:mysql://192.168.200.128:3306/weather?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=UTC
     username: root
@@ -14,6 +17,7 @@ feishu:
   appid: cli_a4e09ae4d7399013
   app-secret: o9wc9JEsBA9YeP7eAxNd2boKJ2BOByYW
   robot-webhook-address: https://open.feishu.cn/open-apis/bot/v2/hook/08999382-e021-413f-87bf-37017ba7f55f
+  get-tenant-access-token-address: https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal
 gaode:
   weather-api-key: 4516693f55a712c8d8c992aaa2dd63a3
   weather-api-url: https://restapi.amap.com/v3/weather/weatherInfo

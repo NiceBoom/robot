@@ -48,7 +48,7 @@ public class WeatherController {
     //从高德API查询实时天气并保存到mysql中
     //每天早八点半，每隔一小时获取一次实时天气，一直到晚上21.30
     //也可以手动获取实时天气
-    @Scheduled(cron = "0 30 8,9,10,11,12,13,14,15,16,17,18,19,20,21 * * ? *")
+    @Scheduled(cron = "0 30 8,9,10,11,12,13,14,15,16,17,18,19,20,21 * * ? ")
     @GetMapping("/findLiveWeatherSaveToMysql")
     public Result findLiveWeatherSaveToMysql() {
         return weatherService.findLiveWeatherSaveToMysql(weatherApiKey, cityCode, liveWeatherCode);
@@ -57,7 +57,7 @@ public class WeatherController {
     //从高德API查询天气预报并保存到mysql中
     //每天9点、10点、12点、13点、19点、20点获取天气预报保存到mysql中
     //也可以手动获取天气预报
-    @Scheduled(cron = "0 0 9,10,12,13,19,20 * * ? *")
+    @Scheduled(cron = "0 0 9,10,12,13,19,20 * * ? ")
     @GetMapping("/findForecastWeatherToMysql")
     public Result findForecastWeatherToMysql() {
 
