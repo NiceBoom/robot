@@ -1,5 +1,6 @@
 package com.fly.robot.service.impl;
 
+import com.alibaba.fastjson.JSONObject;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fly.robot.dao.TableForecastWeatherRepository;
 import com.fly.robot.dao.TableLiveWeatherRepository;
@@ -7,6 +8,7 @@ import com.fly.robot.entity.Result;
 import com.fly.robot.entity.StatusCode;
 import com.fly.robot.pojo.*;
 import com.fly.robot.service.WeatherService;
+import com.fly.robot.util.HttpClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -16,7 +18,9 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class WeatherServiceImpl implements WeatherService {
@@ -185,5 +189,26 @@ public class WeatherServiceImpl implements WeatherService {
         return failResult;
     }
 
+
+    /**
+     *  从高德地图api查找消息地址的具体数据
+     * @param getAddressInfoUrl 获取地址具体信息的URL
+     * @param gaodeWebApiKey 高德ApiKey
+     * @param findAddressInfoMsg 需要查找具体信息的地址
+     * @return
+     */
+    @Override
+    public Result findAddressInfoByMsg(String getAddressInfoUrl, String gaodeWebApiKey, String findAddressInfoMsg) {
+        //创建请求体map信息，携带AppId与AppSecret
+        Map<String, String> sendGetRequestParamMap = new HashMap();
+        sendGetRequestParamMap.put("key", gaodeWebApiKey);
+        sendGetRequestParamMap.put("address", findAddressInfoMsg);
+        //发送请求
+        JSONObject getAddressInfoResponseJson = HttpClient.doGet(getAddressInfoUrl, sendGetRequestParamMap);
+        //组装返回结果并返回
+        Result<Object> getAddressInfoResponseResult = new Result<>();
+        getAddressInfoResponseResult.setData(getAddressInfoResponseJson);
+        return getAddressInfoResponseResult;
+    }
 
 }

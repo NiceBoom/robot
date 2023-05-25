@@ -11,16 +11,22 @@ spring:
   redis:
     host: 192.168.200.128
     port: 6379
-    database: 1
-    connect-timeout: 10000
+    database: 1 #指定redis数据库，启动后默认16个，编号为0-15
+    jedis:
+      pool:
+        max-active: 8 #最大连接数
+        max-wait: 1ms #连接池最大阻塞等待时间
+        max-idle: 4 #连接池中的最大空闲连接
+        min-idle: 0 #连接池中的最小空闲连接
 feishu:
   appid: cli_a4e09ae4d7399013
   app-secret: o9wc9JEsBA9YeP7eAxNd2boKJ2BOByYW
   robot-webhook-address: https://open.feishu.cn/open-apis/bot/v2/hook/08999382-e021-413f-87bf-37017ba7f55f
   get-tenant-access-token-address: https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal
 gaode:
-  weather-api-key: 4516693f55a712c8d8c992aaa2dd63a3
+  web-api-key: 4516693f55a712c8d8c992aaa2dd63a3
   weather-api-url: https://restapi.amap.com/v3/weather/weatherInfo
   weather-api-city-code: 110000
   get-live-weather-code: base
   get-forecast-weather-code: all
+  get-address-adcode-url: https://restapi.amap.com/v3/geocode/geo
