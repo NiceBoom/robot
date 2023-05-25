@@ -2,6 +2,7 @@ package com.fly.robot.service.impl;
 
 import com.alibaba.fastjson.JSONObject;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fly.robot.dao.TableForecastWeatherRepository;
 import com.fly.robot.dao.TableLiveWeatherRepository;
@@ -127,63 +128,39 @@ public class FlyBookServiceImpl implements FlyBookService {
      * @return 返回的发送情况json
      */
     private Result sendWeatherMsg(String sendWeatherMsgApi, String weatherMsg) {
+
+        //创建请求体map信息，携带AppId与AppSecret
+        Map<String, Object> sendWeatherMsgRequestBody = new HashMap();
+        sendWeatherMsgRequestBody.put("msg_type", "text");
+        Map<String, String> requestBodyContext = new HashMap();
+        requestBodyContext.put("text", weatherMsg);
+        sendWeatherMsgRequestBody.put("content", requestBodyContext);
+
         try {
-            //得到connection对象
-            URL httpUrl = new URL(sendWeatherMsgApi);
-            HttpURLConnection connection = (HttpURLConnection) httpUrl.openConnection();
-            //设置请求方式
-            connection.setRequestMethod("POST");
-            connection.setDoOutput(true);
-            // 设置请求头
-            connection.setRequestProperty("Content-Type", "application/json");
+            // 将 Map 转换为 JSON 字符串
+            ObjectMapper objectMapper = new ObjectMapper();
+            String json = objectMapper.writeValueAsString(sendWeatherMsgRequestBody);
+            //发送POST请求
+            JSONObject sendWeatherMsgResponseJson =
+                    HttpClient.doPostJson(sendWeatherMsgApi, json);
+            //返回结果
+            Result<Object> sendWeatherMsgResult = new Result<>();
+            sendWeatherMsgResult.setData(sendWeatherMsgResponseJson);
+            return sendWeatherMsgResult;
 
-            // 设置请求体
-            String requestBody = "{\n" +
-                    "    \"msg_type\": \"text\",\n" +
-                    "    \"content\": {\n" +
-                    "        \"text\": \"" + weatherMsg + "\"\n" +
-                    "    }\n" +
-                    "}";
-            OutputStream outputStream = connection.getOutputStream();
-            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(outputStream, "UTF-8"));
-            writer.write(requestBody);
-            writer.close();
-            //连接
-            connection.connect();
-            // 获取状态码 响应结果
-            if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
-                InputStream inputStream = connection.getInputStream();
-                BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-                String line = null;
-                StringBuffer buffer = new StringBuffer();
-                while ((line = reader.readLine()) != null) {
-                    buffer.append(line);
-                }
-                reader.close();
-                System.out.println(buffer.toString());
-                // 断开连接
-                connection.disconnect();
-
-                Result<Object> sendWeatherMsgResult = new Result<>();
-                sendWeatherMsgResult.setData(buffer.toString());
-
-                return sendWeatherMsgResult;
-            }
-        } catch (Exception e) {
+        }catch (Exception e){
             e.printStackTrace();
         }
         //发送消息失败代码
         Result<Object> failResult = new Result<>();
         failResult.setFlag(false);
-        failResult.setMessage("send forecast weather msg fail");
+        failResult.setMessage("send weather msg fail");
         failResult.setCode(StatusCode.ERROR);
         return failResult;
     }
 
-
     /**
      * 获取TenantAccessToken
-     *
      * @param getTenantAccessTokenAddress 获取TenantAccessTokenAddress链接地址
      * @param robotAppId
      * @param robotAppSecret
@@ -191,83 +168,36 @@ public class FlyBookServiceImpl implements FlyBookService {
      */
     @Override
     public Result getTenantAccessToken(String getTenantAccessTokenAddress, String robotAppId, String robotAppSecret) {
-
-        try {
-            //得到connection对象
-            URL httpUrl = new URL(getTenantAccessTokenAddress);
-            HttpURLConnection connection = (HttpURLConnection) httpUrl.openConnection();
-            //设置请求方式
-            connection.setRequestMethod("POST");
-            connection.setDoOutput(true);
-            // 设置请求头
-            connection.setRequestProperty("Content-Type", "application/json; charset=utf-8");
-
-            // 设置请求体
-            String requestBody = "{\"app_id\": \"" + robotAppId +
-                    "\"app_secret\": \"" +
-                    robotAppSecret + "\",}";
-            OutputStream outputStream = connection.getOutputStream();
-            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(outputStream, "UTF-8"));
-            writer.write(requestBody);
-            writer.close();
-            //连接
-            connection.connect();
-            System.out.println("this is connection ResponseCode: " + connection.getResponseCode());
-            System.out.println("this is errorStream: " + connection.getErrorStream().toString());
-            System.out.println("this is request method: " + connection.getRequestMethod().toString());
-            System.out.println("this is response message: " + connection.getResponseMessage());
-
-            // 获取状态码 响应结果
-            if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
-                InputStream inputStream = connection.getInputStream();
-                BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-                String line = null;
-                StringBuffer buffer = new StringBuffer();
-                while ((line = reader.readLine()) != null) {
-                    buffer.append(line);
-                }
-                reader.close();
-                System.out.println(buffer.toString());
-                // 断开连接
-                connection.disconnect();
-
-                Result<Object> sendWeatherMsgResult = new Result<>();
-                //处理响应数据 格式化回报响应
-                ObjectMapper mapper = new ObjectMapper();
-                GetTenantAccessTokenResponseDto getTenantAccessTokenResponseDto =
-                        mapper.readValue(buffer.toString(), GetTenantAccessTokenResponseDto.class);
-
-                //TODO 处理返回的错误代码  待优化
-                //错误代码地址 https://open.feishu.cn/document/ukTMukTMukTM/ugjM14COyUjL4ITN  通用错误码
-                sendWeatherMsgResult.setData(getTenantAccessTokenResponseDto.getTenantAccessToken());
-
-                return sendWeatherMsgResult;
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
+        //创建请求体map信息，携带AppId与AppSecret
         Map<String, String> sendPostRequestBodyMap = new HashMap();
         sendPostRequestBodyMap.put("app_id", robotAppId);
         sendPostRequestBodyMap.put("app_secret", robotAppSecret);
-        // 将 Map 转换为 JSON 字符串
-        ObjectMapper objectMapper = new ObjectMapper();
         try {
+            // 将 Map 转换为 JSON 字符串
+            ObjectMapper objectMapper = new ObjectMapper();
             String json = objectMapper.writeValueAsString(sendPostRequestBodyMap);
-            System.out.println(json);
-            JSONObject jsonObject = HttpClient.doPostJson(getTenantAccessTokenAddress, json);
+            //用Httpclient工具类发送POST请求
+            JSONObject getTenantAccessTokenResultResponseJson =
+                    HttpClient.doPostJson(getTenantAccessTokenAddress, json);
 
-            Result<Object> sendWeatherMsgResult = new Result<>();
-            sendWeatherMsgResult.setData(jsonObject);
-
-            return sendWeatherMsgResult;
+            if(getTenantAccessTokenResultResponseJson.isEmpty()){
+                //发送消息失败代码
+                Result<Object> failResult = new Result<>();
+                failResult.setFlag(false);
+                failResult.setMessage("get tenantAccessToken fail, return response is null");
+                failResult.setCode(StatusCode.ERROR);
+                return failResult;
+            }
+            //把返回的json字符串转换为map
+            Map<String, Object> getTenantAccessTokenResultResponseMap =
+                    objectMapper.readValue(getTenantAccessTokenResultResponseJson.toString(), new TypeReference<Map<String, Object>>() {});
+            //把map存入到返回结果
+            Result<Object> returnGetTenantAccessTokenResult = new Result<>();
+            returnGetTenantAccessTokenResult.setData(getTenantAccessTokenResultResponseMap);
+            return returnGetTenantAccessTokenResult;
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
-
-
-
-
         //发送消息失败代码
         Result<Object> failResult = new Result<>();
         failResult.setFlag(false);
