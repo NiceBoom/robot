@@ -1,5 +1,9 @@
 package com.fly.robot.controller;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fly.robot.dao.TableForecastWeatherRepository;
 import com.fly.robot.dao.TableLiveWeatherRepository;
 import com.fly.robot.entity.Result;
@@ -13,6 +17,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @CrossOrigin
@@ -113,5 +118,18 @@ public class WeatherController {
     @GetMapping("/getAddressInfoForMsg")
     public Result getAddressInfoForMsg(@RequestParam("address") String findAddressInfoMsg){
         return weatherService.findAddressInfoByMsg(getAddressAdcodeUrl, webApiKey, findAddressInfoMsg);
+    }
+
+    //获取任意地址的天气预报数据
+    @GetMapping("/getForecastWeatherForAddress")
+    public Result getForecastWeatherForAddress(@RequestParam("address") String findAddressInfoMsg){
+        //获取任意地址的具体数据
+        Result addressInfoByMsg = weatherService.findAddressInfoByMsg(getAddressAdcodeUrl, webApiKey, findAddressInfoMsg);
+        //提取出该地址的adcode代码
+        JSONObject addressInfoJson = (JSONObject) addressInfoByMsg.getData();
+        List<Map<String, Object>> geocodes = (List<Map<String, Object>>)addressInfoJson.get("geocodes");
+        String adcode = (String)geocodes.get(0).get("adcode");
+        //从高德获取具体的天气预报
+        return weatherService.findForecastWeather(webApiKey, adcode, forecastWeatherCode);
     }
 }

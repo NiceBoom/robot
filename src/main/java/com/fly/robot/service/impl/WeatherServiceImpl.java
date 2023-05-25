@@ -209,6 +209,7 @@ public class WeatherServiceImpl implements WeatherService {
         Result<Object> getAddressInfoResponseResult = new Result<>();
         getAddressInfoResponseResult.setData(getAddressInfoResponseJson);
         return getAddressInfoResponseResult;
+        //TODO 对获取过程进行优化，先从mysql中获取代码，mysql中没有的话再去高德查询adcode并将其存到mysql中，再返回天气数据
     }
 
 }
