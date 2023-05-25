@@ -1,5 +1,7 @@
 package com.fly.robot.service.impl;
 
+import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fly.robot.dao.TableForecastWeatherRepository;
 import com.fly.robot.dao.TableLiveWeatherRepository;
@@ -7,13 +9,16 @@ import com.fly.robot.entity.Result;
 import com.fly.robot.entity.StatusCode;
 import com.fly.robot.pojo.*;
 import com.fly.robot.service.FlyBookService;
+import com.fly.robot.util.HttpClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class FlyBookServiceImpl implements FlyBookService {
@@ -178,6 +183,7 @@ public class FlyBookServiceImpl implements FlyBookService {
 
     /**
      * 获取TenantAccessToken
+     *
      * @param getTenantAccessTokenAddress 获取TenantAccessTokenAddress链接地址
      * @param robotAppId
      * @param robotAppSecret
@@ -197,16 +203,20 @@ public class FlyBookServiceImpl implements FlyBookService {
             connection.setRequestProperty("Content-Type", "application/json; charset=utf-8");
 
             // 设置请求体
-            String requestBody = "{\n" +
-                    "    \"app_id\": \"" + robotAppId + "\",\n" +
-                    "    \"app_secret\": \"" + robotAppSecret + "\",\n" +
-                    "}";
+            String requestBody = "{\"app_id\": \"" + robotAppId +
+                    "\"app_secret\": \"" +
+                    robotAppSecret + "\",}";
             OutputStream outputStream = connection.getOutputStream();
             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(outputStream, "UTF-8"));
             writer.write(requestBody);
             writer.close();
             //连接
             connection.connect();
+            System.out.println("this is connection ResponseCode: " + connection.getResponseCode());
+            System.out.println("this is errorStream: " + connection.getErrorStream().toString());
+            System.out.println("this is request method: " + connection.getRequestMethod().toString());
+            System.out.println("this is response message: " + connection.getResponseMessage());
+
             // 获取状态码 响应结果
             if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
                 InputStream inputStream = connection.getInputStream();
@@ -236,10 +246,32 @@ public class FlyBookServiceImpl implements FlyBookService {
         } catch (Exception e) {
             e.printStackTrace();
         }
+
+        Map<String, String> sendPostRequestBodyMap = new HashMap();
+        sendPostRequestBodyMap.put("app_id", robotAppId);
+        sendPostRequestBodyMap.put("app_secret", robotAppSecret);
+        // 将 Map 转换为 JSON 字符串
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            String json = objectMapper.writeValueAsString(sendPostRequestBodyMap);
+            System.out.println(json);
+            JSONObject jsonObject = HttpClient.doPostJson(getTenantAccessTokenAddress, json);
+
+            Result<Object> sendWeatherMsgResult = new Result<>();
+            sendWeatherMsgResult.setData(jsonObject);
+
+            return sendWeatherMsgResult;
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+
+
+
+
         //发送消息失败代码
         Result<Object> failResult = new Result<>();
         failResult.setFlag(false);
-        failResult.setMessage("send forecast weather msg fail");
+        failResult.setMessage("get tenantAccessToken fail");
         failResult.setCode(StatusCode.ERROR);
         return failResult;
     }
