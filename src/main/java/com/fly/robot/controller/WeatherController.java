@@ -8,6 +8,7 @@ import com.fly.robot.pojo.TableLiveWeather;
 import com.fly.robot.service.WeatherService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,6 +20,7 @@ import java.util.List;
 @RestController
 @CrossOrigin
 @RequestMapping("/weather")
+@EnableScheduling
 public class WeatherController {
 
     @Autowired

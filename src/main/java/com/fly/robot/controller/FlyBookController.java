@@ -56,7 +56,6 @@ public class FlyBookController {
     //如果你的业务逻辑不需要操作用户的数据资源，仅需操作应用自己拥有的资源（比如在应用自己的文档目录空间下创建云文档），则推荐使用 Tenant Access Token，无需额外申请授权。
     @GetMapping("/getTenantAccessToken")
     Result getTenantAccessToken(){
-
         return flyBookService.getTenantAccessToken(getTenantAccessTokenAddress, robotAppId, robotAppSecret);
     }
 }

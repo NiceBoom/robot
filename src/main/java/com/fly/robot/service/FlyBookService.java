@@ -20,7 +20,7 @@ public interface FlyBookService {
 
     /**
      * @param getTenantAccessTokenAddress 获取TenantAccessTokenAddress链接地址
-     * @param robotAppId
+     * @param robotAppId  
      * @param robotAppSecret
      * @return
      */

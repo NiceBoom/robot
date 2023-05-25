@@ -7,9 +7,7 @@ import com.fly.robot.entity.Result;
 import com.fly.robot.entity.StatusCode;
 import com.fly.robot.pojo.*;
 import com.fly.robot.service.FlyBookService;
-import com.fly.robot.service.WeatherService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
@@ -28,6 +26,7 @@ public class FlyBookServiceImpl implements FlyBookService {
 
     /**
      * 发送实时天气数据消息
+     *
      * @param robotWebHookAddress 消息机器人web hook地址
      * @return
      */
@@ -64,6 +63,7 @@ public class FlyBookServiceImpl implements FlyBookService {
 
     /**
      * 发送未来天气预报消息
+     *
      * @param robotWebHookAddress 消息机器人web hook地址
      * @return
      */
@@ -116,6 +116,7 @@ public class FlyBookServiceImpl implements FlyBookService {
 
     /**
      * 发送天气消息
+     *
      * @param sendWeatherMsgApi 天气机器人hook链接
      * @param weatherMsg        组装好的天气消息
      * @return 返回的发送情况json
@@ -176,16 +177,70 @@ public class FlyBookServiceImpl implements FlyBookService {
 
 
     /**
-     *  获取TenantAccessToken
+     * 获取TenantAccessToken
      * @param getTenantAccessTokenAddress 获取TenantAccessTokenAddress链接地址
      * @param robotAppId
      * @param robotAppSecret
-     * @return
+     * @return data
      */
     @Override
     public Result getTenantAccessToken(String getTenantAccessTokenAddress, String robotAppId, String robotAppSecret) {
 
+        try {
+            //得到connection对象
+            URL httpUrl = new URL(getTenantAccessTokenAddress);
+            HttpURLConnection connection = (HttpURLConnection) httpUrl.openConnection();
+            //设置请求方式
+            connection.setRequestMethod("POST");
+            connection.setDoOutput(true);
+            // 设置请求头
+            connection.setRequestProperty("Content-Type", "application/json");
 
-        return null;
+            // 设置请求体
+            String requestBody = "{\n" +
+                    "    \"app_id\": \"" + robotAppId + "\",\n" +
+                    "    \"app_secret\": \"" + robotAppSecret + "\",\n" +
+                    "}";
+            OutputStream outputStream = connection.getOutputStream();
+            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(outputStream, "UTF-8"));
+            writer.write(requestBody);
+            writer.close();
+            //连接
+            connection.connect();
+            // 获取状态码 响应结果
+            if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
+                InputStream inputStream = connection.getInputStream();
+                BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+                String line = null;
+                StringBuffer buffer = new StringBuffer();
+                while ((line = reader.readLine()) != null) {
+                    buffer.append(line);
+                }
+                reader.close();
+                System.out.println(buffer.toString());
+                // 断开连接
+                connection.disconnect();
+
+                Result<Object> sendWeatherMsgResult = new Result<>();
+                //处理响应数据 格式化回报响应
+                ObjectMapper mapper = new ObjectMapper();
+                GetTenantAccessTokenResponseDto getTenantAccessTokenResponseDto =
+                        mapper.readValue(buffer.toString(), GetTenantAccessTokenResponseDto.class);
+
+                //TODO 处理返回的错误代码  待优化
+                //错误代码地址 https://open.feishu.cn/document/ukTMukTMukTM/ugjM14COyUjL4ITN  通用错误码
+                sendWeatherMsgResult.setData(getTenantAccessTokenResponseDto);
+
+                return sendWeatherMsgResult;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        //发送消息失败代码
+        Result<Object> failResult = new Result<>();
+        failResult.setFlag(false);
+        failResult.setMessage("send forecast weather msg fail");
+        failResult.setCode(StatusCode.ERROR);
+        return failResult;
     }
 }
