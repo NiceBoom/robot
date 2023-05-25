@@ -1,14 +1,13 @@
 package com.fly.robot.pojo;
 
 public class GetTenantAccessTokenResponseDto {
-    public class ResponseDTO {
         private int code;
         private String msg;
-        private String tenant_access_token;
+        private String tenantAccessToken;
         private int expire;
 
         // 构造函数
-        public ResponseDTO() {}
+        public GetTenantAccessTokenResponseDto() {}
 
         // Getters and Setters
         public int getCode() {
@@ -27,12 +26,12 @@ public class GetTenantAccessTokenResponseDto {
             this.msg = msg;
         }
 
-        public String getTenant_access_token() {
-            return tenant_access_token;
+        public String getTenantAccessToken() {
+            return tenantAccessToken;
         }
 
-        public void setTenant_access_token(String tenant_access_token) {
-            this.tenant_access_token = tenant_access_token;
+        public void setTenantAccessToken(String tenantAccessToken) {
+            this.tenantAccessToken = tenantAccessToken;
         }
 
         public int getExpire() {
@@ -42,6 +41,5 @@ public class GetTenantAccessTokenResponseDto {
         public void setExpire(int expire) {
             this.expire = expire;
         }
-    }
 
 }

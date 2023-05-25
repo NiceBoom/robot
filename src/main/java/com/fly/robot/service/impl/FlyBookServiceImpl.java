@@ -194,7 +194,7 @@ public class FlyBookServiceImpl implements FlyBookService {
             connection.setRequestMethod("POST");
             connection.setDoOutput(true);
             // 设置请求头
-            connection.setRequestProperty("Content-Type", "application/json");
+            connection.setRequestProperty("Content-Type", "application/json; charset=utf-8");
 
             // 设置请求体
             String requestBody = "{\n" +
@@ -229,7 +229,7 @@ public class FlyBookServiceImpl implements FlyBookService {
 
                 //TODO 处理返回的错误代码  待优化
                 //错误代码地址 https://open.feishu.cn/document/ukTMukTMukTM/ugjM14COyUjL4ITN  通用错误码
-                sendWeatherMsgResult.setData(getTenantAccessTokenResponseDto);
+                sendWeatherMsgResult.setData(getTenantAccessTokenResponseDto.getTenantAccessToken());
 
                 return sendWeatherMsgResult;
             }
