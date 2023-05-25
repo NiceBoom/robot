@@ -131,5 +131,12 @@ public class WeatherController {
         String adcode = (String)geocodes.get(0).get("adcode");
         //从高德获取具体的天气预报
         return weatherService.findForecastWeather(webApiKey, adcode, forecastWeatherCode);
+        //TODO 对获取adcode过程进行优化，先从mysql中获取代码，mysql中没有的话再去高德查询adcode并将其存到mysql中，再返回天气数据
+        //TODO 在redis添加过期码，adcode、对应的城市名称、过期时间，人工查询天气先到redis或者mysql中查询，过期再查询新的天气情况。(可以优化加入es)
+        //TODO 查询流程，人工查询天气，启动服务器先把mysql中的adcode缓存到redis，查询时候先从redis获取adcode代码，
+        //TODO redis没有就去高德查询，查询结果缓存到mysql与redis中
+        //TODO 优化从第三方获取数据判断获取的结果是否为空的过程，以及返回错误代码判断的过程
+        //TODO 优化对参数数据的校验，加入日志系统
+
     }
 }
