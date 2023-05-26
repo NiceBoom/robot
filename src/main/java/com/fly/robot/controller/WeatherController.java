@@ -136,7 +136,7 @@ public class WeatherController {
         //TODO 查询流程，人工查询天气，启动服务器先把mysql中的adcode缓存到redis，查询时候先从redis获取adcode代码，
         //TODO redis没有就去高德查询，查询结果缓存到mysql与redis中
         //TODO 优化从第三方获取数据判断获取的结果是否为空的过程，以及返回错误代码判断的过程
-        //TODO 优化对参数数据的校验，加入日志系统
-
+        //TODO 优化对参数数据的校验，加入日志系统，添加每天查询第三方接口次数限制，记录每天请求接口次数，凌晨更新
+        //TODO 优化数据库查询时间不对问题，linux与windows系统时间兼容问题，mysql中时间对不上
     }
 }

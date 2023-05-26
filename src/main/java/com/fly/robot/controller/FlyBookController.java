@@ -1,5 +1,8 @@
 package com.fly.robot.controller;
 
+import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fly.robot.entity.Result;
 import com.fly.robot.service.FlyBookService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,6 +11,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @CrossOrigin
@@ -58,4 +64,32 @@ public class FlyBookController {
     Result getTenantAccessToken(){
         return flyBookService.getTenantAccessToken(getTenantAccessTokenAddress, robotAppId, robotAppSecret);
     }
+
+    //处理飞书推送消息
+    @PostMapping("/feishuRobotReceiveMessageProcess")
+    String feishuRobotReceiveMessageProcess(@RequestBody String requestBody){
+        try {
+            //处理请求体变为map
+            ObjectMapper objectMapper = new ObjectMapper();
+            Map<String, String> requestBodyMap = objectMapper.readValue(requestBody, Map.class);
+            //校验请求格式
+            //url_verification 代表这是一个验证请求
+            if("url_verification".equals(requestBodyMap.get("type"))){
+            //获取其中的challenge值并返回
+            //未设置Encrypt_key 即原样返回值
+            //TODO 设置加密方法
+                HashMap<String, String> verificationUrlResultString = new HashMap<>();
+                verificationUrlResultString.put("challenge",requestBodyMap.get("challenge"));
+                System.out.println(verificationUrlResultString.toString());
+                String jsonString = objectMapper.writeValueAsString(verificationUrlResultString);
+                System.out.println(jsonString);
+                return jsonString;
+            }
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+        return null;
+    }
+
+
 }
