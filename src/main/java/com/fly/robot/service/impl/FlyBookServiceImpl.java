@@ -11,8 +11,13 @@ import com.fly.robot.entity.StatusCode;
 import com.fly.robot.pojo.*;
 import com.fly.robot.service.FlyBookService;
 import com.fly.robot.util.HttpClient;
+import com.lark.oapi.Client;
+import com.lark.oapi.service.im.v1.model.CreateMessageReq;
+import com.lark.oapi.service.im.v1.model.CreateMessageReqBody;
+import com.lark.oapi.service.im.v1.model.CreateMessageResp;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -177,7 +182,6 @@ public class FlyBookServiceImpl implements FlyBookService {
             //用Httpclient工具类发送POST请求
             JSONObject getTenantAccessTokenResultResponseJson =
                     HttpClient.doPostJson(getTenantAccessTokenAddress, json);
-
             if(getTenantAccessTokenResultResponseJson.isEmpty()){
                 //发送消息失败代码
                 Result<Object> failResult = new Result<>();
@@ -202,5 +206,61 @@ public class FlyBookServiceImpl implements FlyBookService {
         failResult.setMessage("get tenantAccessToken fail");
         failResult.setCode(StatusCode.ERROR);
         return failResult;
+    }
+
+    @Value("${feishu.appid}")
+    private String robotAppId; //飞书机器人appId
+
+    @Value("${feishu.app-secret}")
+    private String robotAppSecret; //飞书机器人秘钥
+    /**
+     *  发送查询地址的未来天气预报并@查询人
+     * @param sendMsgUrl 发送消息地址
+     * @param tenantAccessToken
+     * @param openId 查询人的OpenId
+     * @param content 未来的天气预报信息
+     * @return
+     */
+    @Override
+    public Result sendForecastWeatherMsgToOpenId(String sendMsgUrl,
+                                                 String tenantAccessToken,
+                                                 String openId,
+                                                 String content) throws Exception {
+        //创建飞书API Client
+        Client feishuClient = Client.newBuilder(robotAppId, robotAppSecret).build();
+        //创建请求体
+        CreateMessageReqBody createMessageReqBody = new CreateMessageReqBody();
+        createMessageReqBody.setReceiveId(openId);
+        //TODO 优化消息类型 https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/im-v1/message/create 到pojo里
+        createMessageReqBody.setMsgType("text");
+        //创建消息文本
+        HashMap<String, String> messageContentMap = new HashMap<>();
+        messageContentMap.put("text", content);
+        //转换为json字符串
+        ObjectMapper objectMapper = new ObjectMapper();
+            String jsonString = objectMapper.writeValueAsString(messageContentMap);
+            System.out.println(jsonString);
+        createMessageReqBody.setContent(jsonString);
+        //发起请求
+        CreateMessageResp resp = feishuClient.im().message()
+                .create(CreateMessageReq.newBuilder()
+                        .receiveIdType("open_id")
+                        .createMessageReqBody(createMessageReqBody)
+                        .build());
+
+        // 处理服务端错误
+        if (!resp.success()) {
+            System.out.println(String.format("code:%s,msg:%s,reqId:%s"
+                    , resp.getCode(), resp.getMsg(), resp.getRequestId()));
+            Result failResult = new Result();
+            failResult.setCode(StatusCode.ERROR);
+            failResult.setMessage(String.format("code:%s,msg:%s,reqId:%s"
+                    , resp.getCode(), resp.getMsg(), resp.getRequestId()));
+            failResult.setData(resp.toString());
+            return failResult;
+        }
+        Result successResult = new Result();
+        successResult.setData(resp);
+        return successResult;
     }
 }

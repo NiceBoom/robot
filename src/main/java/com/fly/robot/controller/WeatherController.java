@@ -6,6 +6,7 @@ import com.alibaba.fastjson.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fly.robot.dao.TableForecastWeatherRepository;
 import com.fly.robot.dao.TableLiveWeatherRepository;
+import com.fly.robot.entity.GaodeConfig;
 import com.fly.robot.entity.Result;
 import com.fly.robot.pojo.TableForecastWeather;
 import com.fly.robot.pojo.TableLiveWeather;
@@ -39,26 +40,13 @@ public class WeatherController {
     @Value("${gaode.web-api-key}")
     private String webApiKey; //读取高德ApiKey
 
-    @Value("${gaode.weather-api-city-code}")
-    private String cityCode;//城市代码
-
-    @Value("${gaode.get-live-weather-code}")
-    private String liveWeatherCode;//实时天气代码
-
-    @Value("${gaode.get-forecast-weather-code}")
-    private String forecastWeatherCode;//天气预报代码
-
-    @Value("${gaode.get-address-adcode-url}")
-    private String getAddressAdcodeUrl;//获取城市信息地址
-
-
     //从高德API查询实时天气并保存到mysql中
     //每天早八点半，每隔一小时获取一次实时天气，一直到晚上21.30
     //也可以手动获取实时天气
     @Scheduled(cron = "0 30 8,9,10,11,12,13,14,15,16,17,18,19,20,21 * * ? ")
     @GetMapping("/findLiveWeatherSaveToMysql")
     public Result findLiveWeatherSaveToMysql() {
-        return weatherService.findLiveWeatherSaveToMysql(webApiKey, cityCode, liveWeatherCode);
+        return weatherService.findLiveWeatherSaveToMysql(webApiKey, GaodeConfig.BEIJING_CITY_ADCODE, GaodeConfig.GET_LIVE_WEATHER_CODE);
     }
 
     //从高德API查询天气预报并保存到mysql中
@@ -68,7 +56,7 @@ public class WeatherController {
     @GetMapping("/findForecastWeatherToMysql")
     public Result findForecastWeatherToMysql() {
 
-        return weatherService.findForecastWeatherToMysql(webApiKey, cityCode, forecastWeatherCode);
+        return weatherService.findForecastWeatherToMysql(webApiKey, GaodeConfig.BEIJING_CITY_ADCODE, GaodeConfig.GET_FORECAST_WEATHER_CODE);
 
     }
 
@@ -79,7 +67,7 @@ public class WeatherController {
     @GetMapping("/findLiveWeather")
     public Result findLiveWeather() {
 
-        return weatherService.findLiveWeather(webApiKey, cityCode, liveWeatherCode);
+        return weatherService.findLiveWeather(webApiKey, GaodeConfig.BEIJING_CITY_ADCODE, GaodeConfig.GET_LIVE_WEATHER_CODE);
 
     }
 
@@ -90,7 +78,7 @@ public class WeatherController {
     @GetMapping("/findForecastWeather")
     public Result findForecastWeather() {
 
-        return weatherService.findForecastWeather(webApiKey, cityCode, forecastWeatherCode);
+        return weatherService.findForecastWeather(webApiKey, GaodeConfig.BEIJING_CITY_ADCODE, GaodeConfig.GET_FORECAST_WEATHER_CODE);
 
     }
 
@@ -117,20 +105,20 @@ public class WeatherController {
     //查找具体地址信息
     @GetMapping("/getAddressInfoForMsg")
     public Result getAddressInfoForMsg(@RequestParam("address") String findAddressInfoMsg){
-        return weatherService.findAddressInfoByMsg(getAddressAdcodeUrl, webApiKey, findAddressInfoMsg);
+        return weatherService.findAddressInfoByMsg(GaodeConfig.GET_ADDRESS_ADCODE_URL, webApiKey, findAddressInfoMsg);
     }
 
     //获取任意地址的天气预报数据
     @GetMapping("/getForecastWeatherForAddress")
     public Result getForecastWeatherForAddress(@RequestParam("address") String findAddressInfoMsg){
         //获取任意地址的具体数据
-        Result addressInfoByMsg = weatherService.findAddressInfoByMsg(getAddressAdcodeUrl, webApiKey, findAddressInfoMsg);
+        Result addressInfoByMsg = weatherService.findAddressInfoByMsg(GaodeConfig.GET_ADDRESS_ADCODE_URL, webApiKey, findAddressInfoMsg);
         //提取出该地址的adcode代码
         JSONObject addressInfoJson = (JSONObject) addressInfoByMsg.getData();
         List<Map<String, Object>> geocodes = (List<Map<String, Object>>)addressInfoJson.get("geocodes");
         String adcode = (String)geocodes.get(0).get("adcode");
         //从高德获取具体的天气预报
-        return weatherService.findForecastWeather(webApiKey, adcode, forecastWeatherCode);
+        return weatherService.findForecastWeather(webApiKey, adcode, GaodeConfig.GET_FORECAST_WEATHER_CODE);
         //TODO 对获取adcode过程进行优化，先从mysql中获取代码，mysql中没有的话再去高德查询adcode并将其存到mysql中，再返回天气数据
         //TODO 在redis添加过期码，adcode、对应的城市名称、过期时间，人工查询天气先到redis或者mysql中查询，过期再查询新的天气情况。(可以优化加入es)
         //TODO 查询流程，人工查询天气，启动服务器先把mysql中的adcode缓存到redis，查询时候先从redis获取adcode代码，

@@ -25,4 +25,14 @@ public interface FlyBookService {
      * @return
      */
     Result getTenantAccessToken(String getTenantAccessTokenAddress, String robotAppId, String robotAppSecret);
+
+    /**
+     *  发送查询地址的未来天气预报并@查询人
+     * @param sendMsgUrl 发送消息地址
+     * @param tenantAccessToken
+     * @param openId 查询人的OpenId
+     * @param content 未来的天气预报信息
+     * @return
+     */
+    Result sendForecastWeatherMsgToOpenId(String sendMsgUrl, String tenantAccessToken, String openId, String content) throws Exception;
 }

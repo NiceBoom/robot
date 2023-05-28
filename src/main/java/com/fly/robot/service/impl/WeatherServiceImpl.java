@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fly.robot.dao.TableForecastWeatherRepository;
 import com.fly.robot.dao.TableLiveWeatherRepository;
+import com.fly.robot.entity.GaodeConfig;
 import com.fly.robot.entity.Result;
 import com.fly.robot.entity.StatusCode;
 import com.fly.robot.pojo.*;
@@ -30,9 +31,6 @@ public class WeatherServiceImpl implements WeatherService {
 
     @Autowired
     public TableForecastWeatherRepository tableForecastWeatherRepository;
-
-    @Value("${gaode.weather-api-url}")
-    private String weatherApiUrl; //读取高德api url地址
 
     /**
      * 获取实时天气
@@ -150,7 +148,7 @@ public class WeatherServiceImpl implements WeatherService {
 
         //拼接url链接与参数
         String requestUrlString =
-                weatherApiUrl + "?key=" + APIkey + "&city=" + cityCode + "&extensions=" + extensions;
+                GaodeConfig.GET_WEATHER_API_URL + "?key=" + APIkey + "&city=" + cityCode + "&extensions=" + extensions;
         HttpURLConnection connection = null;
         try {
             //创建URL对象
