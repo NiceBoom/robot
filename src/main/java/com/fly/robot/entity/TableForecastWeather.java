@@ -1,14 +1,14 @@
-package com.fly.robot.pojo;
+package com.fly.robot.entity;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
 
 /**
- * mysql中的tb_live_weather表格
+ * mysql中的tb_forecast_weather表格
  */
 @Entity
-@Table(name = "tb_live_weather")
-public class TableLiveWeather {
+@Table(name = "tb_forecast_weather")
+public class TableForecastWeather {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,14 +26,14 @@ public class TableLiveWeather {
     private String cityName;
 
     //天气报告数据
-    @Column(name = "live_weather")
-    private String liveWeather;
+    @Column(name = "forecast_weather")
+    private String forecastWeather;
 
     //创建时间
     @Column(name = "create_at")
     private LocalDateTime createAt;
 
-    public TableLiveWeather() {
+    public TableForecastWeather() {
     }
 
     public Integer getWeatherId() {
@@ -60,12 +60,12 @@ public class TableLiveWeather {
         this.cityName = cityName;
     }
 
-    public String getLiveWeather() {
-        return liveWeather;
+    public String getForecastWeather() {
+        return forecastWeather;
     }
 
-    public void setLiveWeather(String liveWeather) {
-        this.liveWeather = liveWeather;
+    public void setForecastWeather(String forecastWeather) {
+        this.forecastWeather = forecastWeather;
     }
 
     public LocalDateTime getCreateAt() {

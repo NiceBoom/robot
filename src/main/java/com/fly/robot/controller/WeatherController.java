@@ -1,15 +1,12 @@
 package com.fly.robot.controller;
 
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fly.robot.dao.TableForecastWeatherRepository;
 import com.fly.robot.dao.TableLiveWeatherRepository;
 import com.fly.robot.entity.GaodeConfig;
 import com.fly.robot.entity.Result;
-import com.fly.robot.pojo.TableForecastWeather;
-import com.fly.robot.pojo.TableLiveWeather;
+import com.fly.robot.entity.TableForecastWeather;
+import com.fly.robot.entity.TableLiveWeather;
 import com.fly.robot.service.WeatherService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;

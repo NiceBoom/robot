@@ -2,16 +2,13 @@ package com.fly.robot.service.impl;
 
 import com.alibaba.fastjson.JSONObject;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fly.robot.entity.*;
+import com.fly.robot.pojo.LiveWeatherDTO;
 import com.fly.robot.dao.TableForecastWeatherRepository;
 import com.fly.robot.dao.TableLiveWeatherRepository;
-import com.fly.robot.entity.GaodeConfig;
-import com.fly.robot.entity.Result;
-import com.fly.robot.entity.StatusCode;
-import com.fly.robot.pojo.*;
 import com.fly.robot.service.WeatherService;
 import com.fly.robot.util.HttpClient;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedReader;
@@ -58,19 +55,20 @@ public class WeatherServiceImpl implements WeatherService {
         try {
             //格式化实时天气
             ObjectMapper mapper = new ObjectMapper();
-            LiveWeatherDto liveWeatherDto = mapper.readValue(liveWeather, LiveWeatherDto.class);
-            Lives lives = liveWeatherDto.getLives().get(0);
+            LiveWeatherDTO liveWeatherDto = mapper.readValue(liveWeather, LiveWeatherDTO.class);
             //组装mysql格式的实时天气
             TableLiveWeather tableLiveWeather = new TableLiveWeather();
-            tableLiveWeather.setCityId(lives.getAdcode());
-            tableLiveWeather.setCityName(lives.getCity());
-            tableLiveWeather.setLiveWeather(liveWeather);
+            tableLiveWeather.setCityId(liveWeatherDto.getLives().get(0).getAdcode());
+            tableLiveWeather.setCityName(liveWeatherDto.getLives().get(0).getCity());
+            tableLiveWeather.setLiveWeather(liveWeatherDto.getLives().get(0).toString());
             tableLiveWeather.setCreateAt(LocalDateTime.now());
 
             //保存实时天气到mysql中
             tableLiveWeatherRepository.save(tableLiveWeather);
-
-            return new Result();
+            //返回实时天气
+            Result<Object> successSaveLiveWeatherResult = new Result<>();
+            successSaveLiveWeatherResult.setData(tableLiveWeather);
+            return successSaveLiveWeatherResult;
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -112,9 +110,8 @@ public class WeatherServiceImpl implements WeatherService {
             String forecastWeather = (String) forecastWeatherResult.getData();
             //格式化天气预报数据，转换成DTO
                 ObjectMapper mapper = new ObjectMapper();
-                ForecastWeatherDto forecastWeatherDto = mapper.readValue(forecastWeather, ForecastWeatherDto.class);
-                List<Forecasts> forecasts = forecastWeatherDto.getForecasts();
-                List<Casts> weatherCasts = forecasts.get(0).getCasts();
+                ForecastWeatherDTONew forecastWeatherDto = mapper.readValue(forecastWeather, ForecastWeatherDTONew.class);
+                List<ForecastWeatherDTONew.CityForecast> forecasts = forecastWeatherDto.getForecasts();
                 //组装mysql格式的天气预报数据
                 TableForecastWeather tableForecastWeather = new TableForecastWeather();
                 tableForecastWeather.setCityId(forecasts.get(0).getAdcode());
