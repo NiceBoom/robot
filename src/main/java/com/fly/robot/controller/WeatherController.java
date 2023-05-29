@@ -1,12 +1,12 @@
 package com.fly.robot.controller;
 
-import com.alibaba.fastjson.JSONObject;
 import com.fly.robot.dao.TableForecastWeatherRepository;
 import com.fly.robot.dao.TableLiveWeatherRepository;
 import com.fly.robot.entity.GaodeConfig;
 import com.fly.robot.entity.Result;
-import com.fly.robot.entity.TableForecastWeather;
-import com.fly.robot.entity.TableLiveWeather;
+import com.fly.robot.pojo.TableForecastWeather;
+import com.fly.robot.pojo.TableLiveWeather;
+import com.fly.robot.pojo.GetAddressInfoFromGaodeDTO;
 import com.fly.robot.service.WeatherService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,7 +15,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @CrossOrigin
@@ -111,11 +110,10 @@ public class WeatherController {
         //获取任意地址的具体数据
         Result addressInfoByMsg = weatherService.findAddressInfoByMsg(GaodeConfig.GET_ADDRESS_ADCODE_URL, webApiKey, findAddressInfoMsg);
         //提取出该地址的adcode代码
-        JSONObject addressInfoJson = (JSONObject) addressInfoByMsg.getData();
-        List<Map<String, Object>> geocodes = (List<Map<String, Object>>)addressInfoJson.get("geocodes");
-        String adcode = (String)geocodes.get(0).get("adcode");
+        GetAddressInfoFromGaodeDTO addressInfoJson = (GetAddressInfoFromGaodeDTO) addressInfoByMsg.getData();
+        String addressAdcode = addressInfoJson.getGeocodes().get(0).getAdcode();
         //从高德获取具体的天气预报
-        return weatherService.findForecastWeather(webApiKey, adcode, GaodeConfig.GET_FORECAST_WEATHER_CODE);
+        return weatherService.findForecastWeather(webApiKey, addressAdcode, GaodeConfig.GET_FORECAST_WEATHER_CODE);
         //TODO 对获取adcode过程进行优化，先从mysql中获取代码，mysql中没有的话再去高德查询adcode并将其存到mysql中，再返回天气数据
         //TODO 在redis添加过期码，adcode、对应的城市名称、过期时间，人工查询天气先到redis或者mysql中查询，过期再查询新的天气情况。(可以优化加入es)
         //TODO 查询流程，人工查询天气，启动服务器先把mysql中的adcode缓存到redis，查询时候先从redis获取adcode代码，

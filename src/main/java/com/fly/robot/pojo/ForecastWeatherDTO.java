@@ -1,7 +1,7 @@
 package com.fly.robot.pojo;
 
 import java.util.List;
-
+//这是从高德API获取到的天气预报数据DTO
 public class ForecastWeatherDTO {
     private String status;//返回状态
     private String count;//返回结果总目数

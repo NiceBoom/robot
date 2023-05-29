@@ -3,7 +3,7 @@ package com.fly.robot.pojo;
 import java.util.List;
 
 /**
- * 实时天气结果DTO
+ * 这是从高德API接口获取到的实时天气结果DTO
  */
 public class LiveWeatherDTO {
     private String status;//返回状态 1：成功 2：失败

@@ -2,14 +2,14 @@ spring:
   task:
     scheduling:
       enable: ture
-#  datasource:
-#    url: jdbc:mysql://172.17.0.3:3306/weather?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=UTC
-#    username: root
-#    password: tqb4DU
   datasource:
-    url: jdbc:mysql://192.168.200.128:3306/weather?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=UTC
+    url: jdbc:mysql://172.17.0.3:3306/weather?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=UTC
     username: root
-    password: root
+    password: tqb4DU
+#  datasource:
+#    url: jdbc:mysql://192.168.200.128:3306/weather?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=UTC
+#    username: root
+#    password: root
   jpa:
     database-platform: org.hibernate.dialect.MySQL57Dialect
   redis:
@@ -26,6 +26,6 @@ feishu:
   appid: cli_a4e09ae4d7399013
   app-secret: o9wc9JEsBA9YeP7eAxNd2boKJ2BOByYW
   robot-webhook-address: https://open.feishu.cn/open-apis/bot/v2/hook/08999382-e021-413f-87bf-37017ba7f55f
-  tenant-access-token: t-g1045qk0YTAN2O2J2JXATRYV42A2RUHP2ZDSIPEZ
+  tenant-access-token: t-g1045tg1DCPXLQMFILTQ6DWHHQLFM2R5FN24ALFJ
 gaode:
   web-api-key: 4516693f55a712c8d8c992aaa2dd63a3

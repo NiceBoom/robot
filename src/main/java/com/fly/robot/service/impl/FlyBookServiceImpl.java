@@ -4,8 +4,8 @@ import com.alibaba.fastjson.JSONObject;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fly.robot.entity.TableForecastWeather;
-import com.fly.robot.entity.TableLiveWeather;
+import com.fly.robot.pojo.TableForecastWeather;
+import com.fly.robot.pojo.TableLiveWeather;
 import com.fly.robot.pojo.ForecastWeatherDTO;
 import com.fly.robot.pojo.LiveWeatherDTO;
 import com.fly.robot.dao.TableForecastWeatherRepository;
@@ -14,6 +14,7 @@ import com.fly.robot.entity.Result;
 import com.fly.robot.entity.StatusCode;
 import com.fly.robot.service.FlyBookService;
 import com.fly.robot.util.HttpClient;
+import com.fly.robot.util.WeatherDtoToMsg;
 import com.lark.oapi.Client;
 import com.lark.oapi.service.im.v1.model.CreateMessageReq;
 import com.lark.oapi.service.im.v1.model.CreateMessageReqBody;
@@ -36,6 +37,12 @@ public class FlyBookServiceImpl implements FlyBookService {
     @Autowired
     private TableForecastWeatherRepository tableForecastWeatherRepository;
 
+    @Value("${feishu.appid}")
+    private String robotAppId; //飞书机器人appId
+
+    @Value("${feishu.app-secret}")
+    private String robotAppSecret; //飞书机器人秘钥
+
     /**
      * 发送实时天气数据消息
      *
@@ -52,14 +59,8 @@ public class FlyBookServiceImpl implements FlyBookService {
             //格式化实时天气数据，转换成DTO
             ObjectMapper mapper = new ObjectMapper();
             LiveWeatherDTO liveWeatherDto = mapper.readValue(liveWeather, LiveWeatherDTO.class);
-
-            //时间截取转换格式
-            String time = "年" + liveWeatherDto.getLives().get(0).getReporttime().substring(5, 7) + "月" + liveWeatherDto.getLives().get(0).getReporttime().substring(8, 10) + "日" + liveWeatherDto.getLives().get(0).getReporttime().substring(11, 13) +
-                    "时" + liveWeatherDto.getLives().get(0).getReporttime().substring(14, 16) + "分";
-
-            //拼接天气消息
-            String liveWeatherMsg = "您当前所在的城市为：" + liveWeatherDto.getLives().get(0).getCity() + "，当前天气：" + liveWeatherDto.getLives().get(0).getWeather() + "，实时气温为" + liveWeatherDto.getLives().get(0).getTemperature() + "摄氏度，空气湿度为" +
-                    liveWeatherDto.getLives().get(0).getHumidity() + "%，" + liveWeatherDto.getLives().get(0).getWinddirection() + "风" + liveWeatherDto.getLives().get(0).getWindpower() + "级。更新时间为" + time + "。";
+            //使用工具类转换dto为天气消息
+            String liveWeatherMsg = WeatherDtoToMsg.conversionLiveWeatherDtoToMsg(liveWeatherDto);
 
             return sendWeatherMsg(robotWebHookAddress, liveWeatherMsg);
         } catch (Exception e) {
@@ -89,29 +90,8 @@ public class FlyBookServiceImpl implements FlyBookService {
             //格式化天气预报数据，转换成DTO
             ObjectMapper mapper = new ObjectMapper();
             ForecastWeatherDTO forecastWeatherDto = mapper.readValue(forecastWeather, ForecastWeatherDTO.class);
-            List<ForecastWeatherDTO.CityForecast.WeatherForecast> weatherCasts = forecastWeatherDto.getForecasts().get(0).getCasts();
-            //格式化天气预报更新时间
-            String time = forecastWeatherDto.getForecasts().get(0).getReporttime().substring(0, 4) + "年" + forecastWeatherDto.getForecasts().get(0).getReporttime().substring(5, 7) + "月" + forecastWeatherDto.getForecasts().get(0).getReporttime().substring(8, 10) + "日" +
-                    forecastWeatherDto.getForecasts().get(0).getReporttime().substring(11, 13) + "时" + forecastWeatherDto.getForecasts().get(0).getReporttime().substring(14, 16) + "分";
-            //拼接天气预报消息
-            String forecastWeatherMsg =
-                    "您当前所在的城市为" + forecastWeatherDto.getForecasts().get(0).getCity() + "。天气预报更新时间为" + time + "。下面是详细的天气情况:" +
-                            weatherCasts.get(0).getDate().substring(0, 4) + "年" + weatherCasts.get(0).getDate().substring(5, 7) + "月" + weatherCasts.get(0).getDate().substring(8, 10) + "日" +
-                            "的白天天气情况为" + weatherCasts.get(0).getDayweather() + "，室外气温为" + weatherCasts.get(0).getDaytemp() + "摄氏度，风向为" +
-                            weatherCasts.get(0).getDaywind() + "风，风力" + weatherCasts.get(0).getDaypower() + "级。夜间天气为" + weatherCasts.get(0).getNightweather() + "，室外气温" +
-                            weatherCasts.get(0).getNighttemp() + "摄氏度，风向为" + weatherCasts.get(0).getNightwind() + "风，风力" + weatherCasts.get(0).getNightpower() + "级。" +
-                            weatherCasts.get(1).getDate().substring(0, 4) + "年" + weatherCasts.get(1).getDate().substring(5, 7) + "月" + weatherCasts.get(1).getDate().substring(8, 10) + "日" +
-                            "的白天天气情况为" + weatherCasts.get(1).getDayweather() + "，室外气温为" + weatherCasts.get(1).getDaytemp() + "摄氏度，风向为" +
-                            weatherCasts.get(1).getDaywind() + "风，风力" + weatherCasts.get(1).getDaypower() + "级。夜间天气为" + weatherCasts.get(1).getNightweather() + "，室外气温" +
-                            weatherCasts.get(1).getNighttemp() + "摄氏度，风向为" + weatherCasts.get(1).getNightwind() + "风，风力" + weatherCasts.get(1).getNightpower() + "级。" +
-                            weatherCasts.get(2).getDate().substring(0, 4) + "年" + weatherCasts.get(2).getDate().substring(5, 7) + "月" + weatherCasts.get(2).getDate().substring(8, 10) + "日" +
-                            "的白天天气情况为" + weatherCasts.get(2).getDayweather() + "，室外气温为" + weatherCasts.get(2).getDaytemp() + "摄氏度，风向为" +
-                            weatherCasts.get(2).getDaywind() + "风，风力" + weatherCasts.get(2).getDaypower() + "级。夜间天气为" + weatherCasts.get(2).getNightweather() + "，室外气温" +
-                            weatherCasts.get(2).getNighttemp() + "摄氏度，风向为" + weatherCasts.get(2).getNightwind() + "风，风力" + weatherCasts.get(2).getNightpower() + "级。" +
-                            weatherCasts.get(3).getDate().substring(0, 4) + "年" + weatherCasts.get(3).getDate().substring(5, 7) + "月" + weatherCasts.get(3).getDate().substring(8, 10) + "日" +
-                            "的白天天气情况为" + weatherCasts.get(3).getDayweather() + "，室外气温为" + weatherCasts.get(3).getDaytemp() + "摄氏度，风向为" +
-                            weatherCasts.get(3).getDaywind() + "风，风力" + weatherCasts.get(3).getDaypower() + "级。夜间天气为" + weatherCasts.get(3).getNightweather() + "，室外气温" +
-                            weatherCasts.get(3).getNighttemp() + "摄氏度，风向为" + weatherCasts.get(3).getNightwind() + "风，风力" + weatherCasts.get(3).getNightpower() + "级。";
+            //使用dto转换msg工具类
+            String forecastWeatherMsg = WeatherDtoToMsg.conversionForecastWeatherDtoToMsg(forecastWeatherDto);
 
             return sendWeatherMsg(robotWebHookAddress, forecastWeatherMsg);
         } catch (Exception e) {
@@ -212,12 +192,6 @@ public class FlyBookServiceImpl implements FlyBookService {
         return failResult;
     }
 
-    @Value("${feishu.appid}")
-    private String robotAppId; //飞书机器人appId
-
-    @Value("${feishu.app-secret}")
-    private String robotAppSecret; //飞书机器人秘钥
-
     /**
      * 发送查询地址的未来天气预报并@查询人
      *
@@ -231,7 +205,8 @@ public class FlyBookServiceImpl implements FlyBookService {
     public Result sendForecastWeatherMsgToOpenId(String sendMsgUrl,
                                                  String tenantAccessToken,
                                                  String openId,
-                                                 String content) throws Exception {
+                                                 String chatId,
+                                                 ForecastWeatherDTO forecastWeatherDto) throws Exception {
         //创建飞书API Client
         Client feishuClient = Client.newBuilder(robotAppId, robotAppSecret).build();
         //创建请求体
@@ -239,13 +214,14 @@ public class FlyBookServiceImpl implements FlyBookService {
         createMessageReqBody.setReceiveId(openId);
         //TODO 优化消息类型 https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/im-v1/message/create 到pojo里
         createMessageReqBody.setMsgType("text");
+        System.out.println("组装好的请求体： " + createMessageReqBody.toString());
         //创建消息文本
         HashMap<String, String> messageContentMap = new HashMap<>();
-        messageContentMap.put("text", content);
+        messageContentMap.put("text", WeatherDtoToMsg.conversionForecastWeatherDtoToMsg(forecastWeatherDto));
         //转换为json字符串
         ObjectMapper objectMapper = new ObjectMapper();
         String jsonString = objectMapper.writeValueAsString(messageContentMap);
-        System.out.println(jsonString);
+        System.out.println(jsonString.toString());
         createMessageReqBody.setContent(jsonString);
         //发起请求
         CreateMessageResp resp = feishuClient.im().message()
@@ -253,6 +229,7 @@ public class FlyBookServiceImpl implements FlyBookService {
                         .receiveIdType("open_id")
                         .createMessageReqBody(createMessageReqBody)
                         .build());
+        System.out.println("响应消息" + resp.toString());
 
         // 处理服务端错误
         if (!resp.success()) {

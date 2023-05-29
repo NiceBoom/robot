@@ -1,6 +1,6 @@
 package com.fly.robot.dao;
 
-import com.fly.robot.entity.TableForecastWeather;
+import com.fly.robot.pojo.TableForecastWeather;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface TableForecastWeatherRepository extends JpaRepository<TableForecastWeather, Long> {

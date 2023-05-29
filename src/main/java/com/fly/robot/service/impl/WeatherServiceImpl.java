@@ -3,18 +3,16 @@ package com.fly.robot.service.impl;
 import com.alibaba.fastjson.JSONObject;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fly.robot.entity.*;
-import com.fly.robot.pojo.LiveWeatherDTO;
+import com.fly.robot.pojo.*;
 import com.fly.robot.dao.TableForecastWeatherRepository;
 import com.fly.robot.dao.TableLiveWeatherRepository;
 import com.fly.robot.service.WeatherService;
+import com.fly.robot.util.FastJSONObjectToDto;
 import com.fly.robot.util.HttpClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
-import java.net.URL;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -110,8 +108,8 @@ public class WeatherServiceImpl implements WeatherService {
             String forecastWeather = (String) forecastWeatherResult.getData();
             //格式化天气预报数据，转换成DTO
                 ObjectMapper mapper = new ObjectMapper();
-                ForecastWeatherDTONew forecastWeatherDto = mapper.readValue(forecastWeather, ForecastWeatherDTONew.class);
-                List<ForecastWeatherDTONew.CityForecast> forecasts = forecastWeatherDto.getForecasts();
+                ForecastWeatherDTO forecastWeatherDto = mapper.readValue(forecastWeather, ForecastWeatherDTO.class);
+                List<ForecastWeatherDTO.CityForecast> forecasts = forecastWeatherDto.getForecasts();
                 //组装mysql格式的天气预报数据
                 TableForecastWeather tableForecastWeather = new TableForecastWeather();
                 tableForecastWeather.setCityId(forecasts.get(0).getAdcode());
@@ -120,12 +118,12 @@ public class WeatherServiceImpl implements WeatherService {
                 tableForecastWeather.setCreateAt(LocalDateTime.now());
                 //保存天气预报到mysql中
                 tableForecastWeatherRepository.save(tableForecastWeather);
-
-                return new Result();
+            Result<Object> getForecastWeatherSuccessResult = new Result<>();
+            getForecastWeatherSuccessResult.setData(tableForecastWeather);
+            return getForecastWeatherSuccessResult;
         } catch (Exception e) {
             e.printStackTrace();
         }
-
         //保存天气预报失败代码
         Result<Object> failResult = new Result<>();
         failResult.setFlag(false);
@@ -143,47 +141,21 @@ public class WeatherServiceImpl implements WeatherService {
      */
     private Result sendRequestGetWeather(String APIkey, String cityCode, String extensions) {
 
-        //拼接url链接与参数
-        String requestUrlString =
-                GaodeConfig.GET_WEATHER_API_URL + "?key=" + APIkey + "&city=" + cityCode + "&extensions=" + extensions;
-        HttpURLConnection connection = null;
-        try {
-            //创建URL对象
-            URL weatherUrl = new URL(requestUrlString);
-            //打开链接
-            connection = (HttpURLConnection) weatherUrl.openConnection();
-            connection.setRequestMethod("GET");
-            //发送请求并获得响应
-            BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-            String line;
-            StringBuilder response = new StringBuilder();
-            while ((line = reader.readLine()) != null) {
-                response.append(line);
-            }
-            reader.close();
-
-            // 输出响应结果
-            System.out.println(response.toString());
-
-            // 关闭连接
-            connection.disconnect();
-
-            Result<Object> getWeatherResult = new Result<>();
-            getWeatherResult.setData(response.toString());
-            return getWeatherResult;
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        //获取天气预报失败代码
-        Result<Object> failResult = new Result<>();
-        failResult.setFlag(false);
-        failResult.setMessage("save live weather fail");
-        failResult.setCode(StatusCode.ERROR);
-        return failResult;
+        //组装请求参数
+        HashMap<String, String> reqParam = new HashMap<>();
+        reqParam.put("key", APIkey);
+        reqParam.put("city", cityCode);
+        reqParam.put("extensions", extensions);
+        //发送GET请求
+        JSONObject reqJson = HttpClient.doGet(GaodeConfig.GET_WEATHER_API_URL, reqParam);
+        System.out.println(reqJson);
+        //把返回结果转换为dto
+        ForecastWeatherDTO forecastWeatherDTO = FastJSONObjectToDto.conversion(reqJson, ForecastWeatherDTO.class);
+        //组装返回结果
+        Result<Object> getWeatherResult = new Result<>();
+        getWeatherResult.setData(forecastWeatherDTO);
+        return getWeatherResult;
     }
-
 
     /**
      *  从高德地图api查找消息地址的具体数据
@@ -200,9 +172,11 @@ public class WeatherServiceImpl implements WeatherService {
         sendGetRequestParamMap.put("address", findAddressInfoMsg);
         //发送请求
         JSONObject getAddressInfoResponseJson = HttpClient.doGet(getAddressInfoUrl, sendGetRequestParamMap);
-        //组装返回结果并返回
+        //把fastjson的JSONObject 转换为jackson中的JSONObject
+        FastJSONObjectToDto fastJSONObjectToDto = new FastJSONObjectToDto();
+        GetAddressInfoFromGaodeDTO conversion = fastJSONObjectToDto.conversion(getAddressInfoResponseJson, GetAddressInfoFromGaodeDTO.class);
         Result<Object> getAddressInfoResponseResult = new Result<>();
-        getAddressInfoResponseResult.setData(getAddressInfoResponseJson);
+        getAddressInfoResponseResult.setData(conversion);
         return getAddressInfoResponseResult;
         //TODO 对获取过程进行优化，先从mysql中获取代码，mysql中没有的话再去高德查询adcode并将其存到mysql中，再返回天气数据
     }
