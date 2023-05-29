@@ -2,14 +2,14 @@ spring:
   task:
     scheduling:
       enable: ture
-  datasource:
-    url: jdbc:mysql://172.17.0.3:3306/weather?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=UTC
-    username: root
-    password: tqb4DU
 #  datasource:
-#    url: jdbc:mysql://192.168.200.128:3306/weather?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=UTC
+#    url: jdbc:mysql://172.17.0.3:3306/weather?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=UTC
 #    username: root
-#    password: root
+#    password: tqb4DU
+  datasource:
+    url: jdbc:mysql://192.168.200.128:3306/weather?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=UTC
+    username: root
+    password: root
   jpa:
     database-platform: org.hibernate.dialect.MySQL57Dialect
   redis:

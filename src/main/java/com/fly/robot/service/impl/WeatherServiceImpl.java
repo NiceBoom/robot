@@ -1,6 +1,7 @@
 package com.fly.robot.service.impl;
 
 import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fly.robot.dao.TableAddressAdcodeRepository;
 import com.fly.robot.entity.*;
@@ -14,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -143,21 +145,104 @@ public class WeatherServiceImpl implements WeatherService {
      * @return
      */
     private Result sendRequestGetWeather(String APIkey, String cityCode, String extensions) {
+        //获取当前时间
+        LocalDateTime nowTime = LocalDateTime.now();
+        //获取当前时间减去八小时后的时间,校验天气预报的过期时间
+        LocalDateTime eightHoursAgo = nowTime.minus(8, ChronoUnit.HOURS);
+        //获取当前时间减去两小时后的时间，校验实时天气的过期时间
+        LocalDateTime twoHoursAgo = nowTime.minus(2, ChronoUnit.HOURS);
 
-        //组装请求参数
-        HashMap<String, String> reqParam = new HashMap<>();
-        reqParam.put("key", APIkey);
-        reqParam.put("city", cityCode);
-        reqParam.put("extensions", extensions);
-        //发送GET请求
-        JSONObject reqJson = HttpClient.doGet(GaodeConfig.GET_WEATHER_API_URL, reqParam);
-        System.out.println(reqJson);
-        //把返回结果转换为dto
-        ForecastWeatherDTO forecastWeatherDTO = FastJSONObjectToDto.conversion(reqJson, ForecastWeatherDTO.class);
-        //组装返回结果
-        Result<Object> getWeatherResult = new Result<>();
-        getWeatherResult.setData(forecastWeatherDTO);
-        return getWeatherResult;
+        //获取未来预报天气
+        if(GaodeConfig.GET_FORECAST_WEATHER_CODE.equals(extensions)){
+            //从数据库查询最新一条天气
+            List<TableForecastWeather> forecastWeather =
+                    tableForecastWeatherRepository.findFirstByCityIdOrderByCreateAtDesc(cityCode);
+            //如果mysql中没有或者查询结果在8小时之前，则查询新天气
+            if(forecastWeather.isEmpty() || forecastWeather.get(0).getCreateAt().isBefore(eightHoursAgo)){
+                //组装请求参数
+                HashMap<String, String> reqParam = new HashMap<>();
+                reqParam.put("key", APIkey);
+                reqParam.put("city", cityCode);
+                reqParam.put("extensions", extensions);
+                //发送GET请求
+                JSONObject reqJson = HttpClient.doGet(GaodeConfig.GET_WEATHER_API_URL, reqParam);
+                System.out.println(reqJson);
+                //把返回结果转换为dto
+                ForecastWeatherDTO forecastWeatherDTO = FastJSONObjectToDto.conversion(reqJson, ForecastWeatherDTO.class);
+                //dto转换为json字符串
+                ObjectMapper objectMapper = new ObjectMapper();
+                try {
+                    String forecastWeatherDTOString = objectMapper.writeValueAsString(forecastWeatherDTO);
+                    System.out.println(forecastWeatherDTOString);
+                    //组装数据并存入到mysql中
+                    TableForecastWeather tableForecastWeather = new TableForecastWeather();
+                    tableForecastWeather.setForecastWeather(forecastWeatherDTOString);
+                    tableForecastWeather.setCreateAt(LocalDateTime.now());
+                    tableForecastWeather.setCityId(forecastWeatherDTO.getForecasts().get(0).getAdcode());
+                    tableForecastWeather.setCityName(forecastWeatherDTO.getForecasts().get(0).getCity());
+                    tableForecastWeatherRepository.save(tableForecastWeather);
+                    //组装返回结果
+                    Result<Object> getWeatherResult = new Result<>();
+                    getWeatherResult.setData(forecastWeatherDTO);
+                    return getWeatherResult;
+                } catch (JsonProcessingException e) {
+                    e.printStackTrace();
+                }
+
+            }
+            //数据库中存在的话企且没有过期的话
+            Result<Object> getWeatherResult = new Result<>();
+            getWeatherResult.setData(forecastWeather.get(0));
+            return getWeatherResult;
+        }
+        //获取实时天气消息
+        if(GaodeConfig.GET_LIVE_WEATHER_CODE.equals(extensions)){
+            //从数据库查询最新一条天气
+            List<TableLiveWeather> liveWeather =
+                    tableLiveWeatherRepository.findFirstByCityIdOrderByCreateAtDesc(cityCode);
+            //数据库中不存在或者创建时间超过两小时的话
+            if(liveWeather.isEmpty() || liveWeather.get(0).getCreateAt().isBefore(twoHoursAgo)){
+                //组装请求参数
+                HashMap<String, String> reqParam = new HashMap<>();
+                reqParam.put("key", APIkey);
+                reqParam.put("city", cityCode);
+                reqParam.put("extensions", extensions);
+                //发送GET请求
+                JSONObject reqJson = HttpClient.doGet(GaodeConfig.GET_WEATHER_API_URL, reqParam);
+                System.out.println(reqJson);
+                //把返回结果转换为dto
+                ForecastWeatherDTO liveWeatherDTO = FastJSONObjectToDto.conversion(reqJson, ForecastWeatherDTO.class);
+                //dto转换为json字符串
+                ObjectMapper objectMapper = new ObjectMapper();
+                try {
+                    String liveWeatherDTOString = objectMapper.writeValueAsString(liveWeatherDTO);
+                    System.out.println(liveWeatherDTOString);
+                //组装数据并存入到mysql中
+                TableLiveWeather tableLiveWeather = new TableLiveWeather();
+                tableLiveWeather.setLiveWeather(liveWeatherDTOString);
+                tableLiveWeather.setCreateAt(LocalDateTime.now());
+                tableLiveWeather.setCityId(liveWeatherDTO.getForecasts().get(0).getAdcode());
+                tableLiveWeather.setCityName(liveWeatherDTO.getForecasts().get(0).getCity());
+                tableLiveWeatherRepository.save(tableLiveWeather);
+                //组装返回结果
+                Result<Object> getWeatherResult = new Result<>();
+                getWeatherResult.setData(liveWeatherDTO);
+                return getWeatherResult;
+            } catch (JsonProcessingException e) {
+                e.printStackTrace();
+            }
+            }
+            //数据库中存在的话
+            Result<Object> getWeatherResult = new Result<>();
+            getWeatherResult.setData(liveWeather.get(0));
+            return getWeatherResult;
+        }
+        //天气类型代码不存在
+        Result<Object> failResult = new Result<>();
+        failResult.setMessage("get weather extension is fail");
+        failResult.setCode(StatusCode.ERROR);
+        return failResult;
+
     }
 
     /**
