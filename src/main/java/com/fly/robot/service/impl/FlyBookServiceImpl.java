@@ -4,15 +4,14 @@ import com.alibaba.fastjson.JSONObject;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fly.robot.pojo.TableForecastWeather;
-import com.fly.robot.pojo.TableLiveWeather;
-import com.fly.robot.pojo.ForecastWeatherDTO;
-import com.fly.robot.pojo.LiveWeatherDTO;
+import com.fly.robot.dao.TableFlyTokenRepository;
+import com.fly.robot.pojo.*;
 import com.fly.robot.dao.TableForecastWeatherRepository;
 import com.fly.robot.dao.TableLiveWeatherRepository;
 import com.fly.robot.entity.Result;
 import com.fly.robot.entity.StatusCode;
 import com.fly.robot.service.FlyBookService;
+import com.fly.robot.util.FastJSONObjectToDto;
 import com.fly.robot.util.HttpClient;
 import com.fly.robot.util.WeatherDtoToMsg;
 import com.lark.oapi.Client;
@@ -24,6 +23,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +38,9 @@ public class FlyBookServiceImpl implements FlyBookService {
     @Autowired
     private TableForecastWeatherRepository tableForecastWeatherRepository;
 
+    @Autowired
+    private TableFlyTokenRepository tableFlyTokenRepository;
+
     @Value("${feishu.appid}")
     private String robotAppId; //飞书机器人appId
 
@@ -47,14 +51,15 @@ public class FlyBookServiceImpl implements FlyBookService {
      * 发送实时天气数据消息
      *
      * @param robotWebHookAddress 消息机器人web hook地址
+     * @param cityId              城市代码
      * @return
      */
     @Override
-    public Result sendLiveWeatherMsg(String robotWebHookAddress) {
+    public Result sendLiveWeatherMsg(String robotWebHookAddress, String cityId) {
         try {
             //从mysql获取最新一条实时天气数据
-            TableLiveWeather liveWeatherFromMysql = tableLiveWeatherRepository.findFirstByOrderByCreateAtDesc();
-            String liveWeather = liveWeatherFromMysql.getLiveWeather();
+            List<TableLiveWeather> liveWeatherFromMysql = tableLiveWeatherRepository.findFirstByCityIdOrderByCreateAtDesc(cityId);
+            String liveWeather = liveWeatherFromMysql.get(0).getLiveWeather();
 
             //格式化实时天气数据，转换成DTO
             ObjectMapper mapper = new ObjectMapper();
@@ -81,12 +86,12 @@ public class FlyBookServiceImpl implements FlyBookService {
      * @return
      */
     @Override
-    public Result sendForecastWeatherMsg(String robotWebHookAddress) {
+    public Result sendForecastWeatherMsg(String robotWebHookAddress, String cityId) {
         try {
             //从mysql查找最新的一条天气预报数据
-            TableForecastWeather forecastWeatherFromMysql = tableForecastWeatherRepository.findFirstByOrderByCreateAtDesc();
+            List<TableForecastWeather> forecastWeatherFromMysql = tableForecastWeatherRepository.findFirstByCityIdOrderByCreateAtDesc(cityId);
             //获取天气预报信息
-            String forecastWeather = forecastWeatherFromMysql.getForecastWeather();
+            String forecastWeather = forecastWeatherFromMysql.get(0).getForecastWeather();
             //格式化天气预报数据，转换成DTO
             ObjectMapper mapper = new ObjectMapper();
             ForecastWeatherDTO forecastWeatherDto = mapper.readValue(forecastWeather, ForecastWeatherDTO.class);
@@ -147,39 +152,101 @@ public class FlyBookServiceImpl implements FlyBookService {
     /**
      * 获取TenantAccessToken
      *
-     * @param getTenantAccessTokenAddress 获取TenantAccessTokenAddress链接地址
+     * @param getTokenAddress 获取Token链接地址
      * @param robotAppId
      * @param robotAppSecret
+     * @param tokenType       获取的token类型
      * @return data
      */
     @Override
-    public Result getTenantAccessToken(String getTenantAccessTokenAddress, String robotAppId, String robotAppSecret) {
-        //创建请求体map信息，携带AppId与AppSecret
-        Map<String, String> sendPostRequestBodyMap = new HashMap();
-        sendPostRequestBodyMap.put("app_id", robotAppId);
-        sendPostRequestBodyMap.put("app_secret", robotAppSecret);
+    public Result getToken(String getTokenAddress, String robotAppId, String robotAppSecret, String tokenType) {
+        //从数据库获取tenantAccessToken
+        List<TableFlybookToken> token =
+                tableFlyTokenRepository.findTopByAppIdAndAppSecretOrderByCreateAtDesc(robotAppId, robotAppSecret);
+        //获取当前时间
+        LocalDateTime nowTime = LocalDateTime.now();
         try {
-            // 将 Map 转换为 JSON 字符串
-            ObjectMapper objectMapper = new ObjectMapper();
-            String json = objectMapper.writeValueAsString(sendPostRequestBodyMap);
-            //用Httpclient工具类发送POST请求
-            JSONObject getTenantAccessTokenResultResponseJson =
-                    HttpClient.doPostJson(getTenantAccessTokenAddress, json);
-            if (getTenantAccessTokenResultResponseJson.isEmpty()) {
-                //发送消息失败代码
-                Result<Object> failResult = new Result<>();
-                failResult.setFlag(false);
-                failResult.setMessage("get tenantAccessToken fail, return response is null");
-                failResult.setCode(StatusCode.ERROR);
-                return failResult;
+            //如果没有token或者token已经过期，则获取一个新的token保存到mysql并返回数据
+            if (token == null || token.isEmpty()) {
+                //创建请求体map信息，携带AppId与AppSecret
+                Map<String, String> sendPostRequestBodyMap = new HashMap();
+                sendPostRequestBodyMap.put("app_id", robotAppId);
+                sendPostRequestBodyMap.put("app_secret", robotAppSecret);
+                // 将 Map 转换为 JSON 字符串
+                ObjectMapper objectMapper = new ObjectMapper();
+                String json = objectMapper.writeValueAsString(sendPostRequestBodyMap);
+                //用Httpclient工具类发送POST请求
+                JSONObject getTenantAccessTokenResultResponseJson =
+                        HttpClient.doPostJson(getTokenAddress, json);
+                if (getTenantAccessTokenResultResponseJson.isEmpty()) {
+                    //发送消息失败代码
+                    Result<Object> failResult = new Result<>();
+                    failResult.setFlag(false);
+                    failResult.setMessage("get tenantAccessToken fail");
+                    failResult.setCode(StatusCode.ERROR);
+                    return failResult;
+                }
+                //把返回的json字符串转换为dto
+                GetTenantAccessTokenResDTO conversion =
+                        FastJSONObjectToDto.conversion(getTenantAccessTokenResultResponseJson, GetTenantAccessTokenResDTO.class);
+                //组装存入mysql中的数据
+                TableFlybookToken tableFlybookToken = new TableFlybookToken();
+                tableFlybookToken.setToken(conversion.getTenantAccessToken());
+                tableFlybookToken.setTokenExpire(conversion.getExpire());
+                tableFlybookToken.setTokenType(tokenType);
+                tableFlybookToken.setAppId(robotAppId);
+                tableFlybookToken.setAppSecret(robotAppSecret);
+                tableFlybookToken.setCreateAt(LocalDateTime.now());
+                tableFlyTokenRepository.save(tableFlybookToken);
+
+                //把token存入到返回结果
+                Result<Object> returnGetTenantAccessTokenResult = new Result<>();
+                returnGetTenantAccessTokenResult.setData(tableFlybookToken);
+                return returnGetTenantAccessTokenResult;
+
             }
-            //把返回的json字符串转换为map
-            Map<String, Object> getTenantAccessTokenResultResponseMap =
-                    objectMapper.readValue(getTenantAccessTokenResultResponseJson.toString(), new TypeReference<Map<String, Object>>() {
-                    });
-            //把map存入到返回结果
+            //获取该token过期时间，有效期缩短15分钟，在30分钟内获取token会获得一个新的
+            LocalDateTime expireAgo = nowTime.minus(token.get(0).getTokenExpire() - 15 * 60, ChronoUnit.SECONDS);
+            if (token.get(0).getCreateAt().isBefore(expireAgo)) {
+                //创建请求体map信息，携带AppId与AppSecret
+                Map<String, String> sendPostRequestBodyMap = new HashMap();
+                sendPostRequestBodyMap.put("app_id", robotAppId);
+                sendPostRequestBodyMap.put("app_secret", robotAppSecret);
+                // 将 Map 转换为 JSON 字符串
+                ObjectMapper objectMapper = new ObjectMapper();
+                String json = objectMapper.writeValueAsString(sendPostRequestBodyMap);
+                //用Httpclient工具类发送POST请求
+                JSONObject getTenantAccessTokenResultResponseJson =
+                        HttpClient.doPostJson(getTokenAddress, json);
+                if (getTenantAccessTokenResultResponseJson.isEmpty()) {
+                    //发送消息失败代码
+                    Result<Object> failResult = new Result<>();
+                    failResult.setFlag(false);
+                    failResult.setMessage("get tenantAccessToken fail");
+                    failResult.setCode(StatusCode.ERROR);
+                    return failResult;
+                }
+                //把返回的json字符串转换为dto
+                GetTenantAccessTokenResDTO conversion =
+                        FastJSONObjectToDto.conversion(getTenantAccessTokenResultResponseJson, GetTenantAccessTokenResDTO.class);
+                //组装存入mysql中的数据
+                TableFlybookToken tableFlybookToken = new TableFlybookToken();
+                tableFlybookToken.setToken(conversion.getTenantAccessToken());
+                tableFlybookToken.setTokenExpire(conversion.getExpire());
+                tableFlybookToken.setTokenType(tokenType);
+                tableFlybookToken.setAppId(robotAppId);
+                tableFlybookToken.setAppSecret(robotAppSecret);
+                tableFlybookToken.setCreateAt(LocalDateTime.now());
+                tableFlyTokenRepository.save(tableFlybookToken);
+
+                //把token存入到返回结果
+                Result<Object> returnGetTenantAccessTokenResult = new Result<>();
+                returnGetTenantAccessTokenResult.setData(tableFlybookToken);
+                return returnGetTenantAccessTokenResult;
+            }
+            //如果token没过期，则直接返回
             Result<Object> returnGetTenantAccessTokenResult = new Result<>();
-            returnGetTenantAccessTokenResult.setData(getTenantAccessTokenResultResponseMap);
+            returnGetTenantAccessTokenResult.setData(token.get(0));
             return returnGetTenantAccessTokenResult;
         } catch (JsonProcessingException e) {
             e.printStackTrace();
@@ -195,10 +262,10 @@ public class FlyBookServiceImpl implements FlyBookService {
     /**
      * 发送查询地址的未来天气预报并@查询人
      *
-     * @param sendMsgUrl        发送消息地址
+     * @param sendMsgUrl         发送消息地址
      * @param tenantAccessToken
-     * @param openId            查询人的OpenId
-     * @param content           未来的天气预报信息
+     * @param openId             查询人的OpenId
+     * @param forecastWeatherDto 未来的天气预报信息
      * @return
      */
     @Override

@@ -55,7 +55,7 @@ public class FlyBookController {
     @PostMapping("/sendLiveWeatherMsg")
     Result sendLiveWeatherMsg() {
         //发送实时天气数据消息
-        return flyBookService.sendLiveWeatherMsg(robotWebHookAddress);
+        return flyBookService.sendLiveWeatherMsg(robotWebHookAddress, GaodeConfig.BEIJING_CITY_ADCODE);
     }
 
     //发送未来天气预报情况
@@ -64,7 +64,7 @@ public class FlyBookController {
     @Scheduled(cron = "0 10 9,10,12,13,19,20 * * ? ")
     @PostMapping("/sendForecastWeatherMsg")
     Result sendForecastWeatherMsg() {
-        return flyBookService.sendForecastWeatherMsg(robotWebHookAddress);
+        return flyBookService.sendForecastWeatherMsg(robotWebHookAddress, GaodeConfig.BEIJING_CITY_ADCODE);
     }
 
     //获取Tenant Access Token
@@ -72,7 +72,7 @@ public class FlyBookController {
     //如果你的业务逻辑不需要操作用户的数据资源，仅需操作应用自己拥有的资源（比如在应用自己的文档目录空间下创建云文档），则推荐使用 Tenant Access Token，无需额外申请授权。
     @GetMapping("/getTenantAccessToken")
     Result getTenantAccessToken() {
-        return flyBookService.getTenantAccessToken(FlyBookConfig.GET_TENANT_ACCESS_TOKEN_ADDRESS, robotAppId, robotAppSecret);
+        return flyBookService.getToken(FlyBookConfig.GET_TENANT_ACCESS_TOKEN_ADDRESS, robotAppId, robotAppSecret, FlyBookConfig.GET_FLYBOOK_TENANT_ACCESS_TOKEN);
     }
 
     //处理飞书推送消息

@@ -10,22 +10,23 @@ public interface FlyBookService {
      * @param robotWebHookAddress 消息机器人web hook地址
      * @return
      */
-    Result sendLiveWeatherMsg(String robotWebHookAddress);
+    Result sendLiveWeatherMsg(String robotWebHookAddress, String cityId);
 
     /**
      * 发送未来天气预报消息
      * @param robotWebHookAddress 消息机器人web hook地址
      * @return
      */
-    Result sendForecastWeatherMsg(String robotWebHookAddress);
+    Result sendForecastWeatherMsg(String robotWebHookAddress, String cityId);
 
     /**
-     * @param getTenantAccessTokenAddress 获取TenantAccessTokenAddress链接地址
+     * @param getTokenAddress 获取TenantAccessTokenAddress链接地址
      * @param robotAppId  
      * @param robotAppSecret
+     * @param tokenType 获取token类型
      * @return
      */
-    Result getTenantAccessToken(String getTenantAccessTokenAddress, String robotAppId, String robotAppSecret);
+    Result getToken(String getTokenAddress, String robotAppId, String robotAppSecret, String tokenType);
 
     /**
      *  发送查询地址的未来天气预报并@查询人
