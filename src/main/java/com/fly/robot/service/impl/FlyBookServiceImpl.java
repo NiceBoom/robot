@@ -165,90 +165,69 @@ public class FlyBookServiceImpl implements FlyBookService {
                 tableFlyTokenRepository.findTopByAppIdAndAppSecretOrderByCreateAtDesc(robotAppId, robotAppSecret);
         //获取当前时间
         LocalDateTime nowTime = LocalDateTime.now();
+        //如果没有token或者token已经过期，则获取一个新的token保存到mysql并返回数据
+        if (token == null || token.isEmpty()) {
+            return doGetReqGetToken(getTokenAddress, robotAppId, robotAppSecret, tokenType);
+        }
+        //获取该token过期时间，有效期缩短15分钟，
+        LocalDateTime expireAgo = nowTime.minus(token.get(0).getTokenExpire() - 15 * 60, ChronoUnit.SECONDS);
+        //如果token已过期，则获取一个新的token保存到mysql并返回数据
+        if (token.get(0).getCreateAt().isBefore(expireAgo)) {
+            return doGetReqGetToken(getTokenAddress, robotAppId, robotAppSecret, tokenType);
+        }
+        //如果token没过期，则直接返回
+        Result<Object> returnGetTenantAccessTokenResult = new Result<>();
+        returnGetTenantAccessTokenResult.setData(token.get(0));
+        return returnGetTenantAccessTokenResult;
+    }
+
+    /**
+     * 发送get请求获取token并存到mysql中
+     *
+     * @param getTokenAddress 获取Token链接地址
+     * @param robotAppId
+     * @param robotAppSecret
+     * @param tokenType       获取的token类型
+     * @return data
+     */
+    public Result doGetReqGetToken(String getTokenAddress, String robotAppId, String robotAppSecret, String tokenType) {
         try {
-            //如果没有token或者token已经过期，则获取一个新的token保存到mysql并返回数据
-            if (token == null || token.isEmpty()) {
-                //创建请求体map信息，携带AppId与AppSecret
-                Map<String, String> sendPostRequestBodyMap = new HashMap();
-                sendPostRequestBodyMap.put("app_id", robotAppId);
-                sendPostRequestBodyMap.put("app_secret", robotAppSecret);
-                // 将 Map 转换为 JSON 字符串
-                ObjectMapper objectMapper = new ObjectMapper();
-                String json = objectMapper.writeValueAsString(sendPostRequestBodyMap);
-                //用Httpclient工具类发送POST请求
-                JSONObject getTenantAccessTokenResultResponseJson =
-                        HttpClient.doPostJson(getTokenAddress, json);
-                if (getTenantAccessTokenResultResponseJson.isEmpty()) {
-                    //发送消息失败代码
-                    Result<Object> failResult = new Result<>();
-                    failResult.setFlag(false);
-                    failResult.setMessage("get tenantAccessToken fail");
-                    failResult.setCode(StatusCode.ERROR);
-                    return failResult;
-                }
-                //把返回的json字符串转换为dto
-                GetTenantAccessTokenResDTO conversion =
-                        FastJSONObjectToDto.conversion(getTenantAccessTokenResultResponseJson, GetTenantAccessTokenResDTO.class);
-                //组装存入mysql中的数据
-                TableFlybookToken tableFlybookToken = new TableFlybookToken();
-                tableFlybookToken.setToken(conversion.getTenantAccessToken());
-                tableFlybookToken.setTokenExpire(conversion.getExpire());
-                tableFlybookToken.setTokenType(tokenType);
-                tableFlybookToken.setAppId(robotAppId);
-                tableFlybookToken.setAppSecret(robotAppSecret);
-                tableFlybookToken.setCreateAt(LocalDateTime.now());
-                tableFlyTokenRepository.save(tableFlybookToken);
-
-                //把token存入到返回结果
-                Result<Object> returnGetTenantAccessTokenResult = new Result<>();
-                returnGetTenantAccessTokenResult.setData(tableFlybookToken);
-                return returnGetTenantAccessTokenResult;
-
+            //创建请求体map信息，携带AppId与AppSecret
+            Map<String, String> sendPostRequestBodyMap = new HashMap();
+            sendPostRequestBodyMap.put("app_id", robotAppId);
+            sendPostRequestBodyMap.put("app_secret", robotAppSecret);
+            // 将 Map 转换为 JSON 字符串
+            ObjectMapper objectMapper = new ObjectMapper();
+            String json = objectMapper.writeValueAsString(sendPostRequestBodyMap);
+            //用Httpclient工具类发送POST请求
+            JSONObject getTenantAccessTokenResultResponseJson =
+                    HttpClient.doPostJson(getTokenAddress, json);
+            if (getTenantAccessTokenResultResponseJson.isEmpty()) {
+                //发送消息失败代码
+                Result<Object> failResult = new Result<>();
+                failResult.setFlag(false);
+                failResult.setMessage("get tenantAccessToken fail");
+                failResult.setCode(StatusCode.ERROR);
+                return failResult;
             }
-            //获取该token过期时间，有效期缩短15分钟，在30分钟内获取token会获得一个新的
-            LocalDateTime expireAgo = nowTime.minus(token.get(0).getTokenExpire() - 15 * 60, ChronoUnit.SECONDS);
-            if (token.get(0).getCreateAt().isBefore(expireAgo)) {
-                //创建请求体map信息，携带AppId与AppSecret
-                Map<String, String> sendPostRequestBodyMap = new HashMap();
-                sendPostRequestBodyMap.put("app_id", robotAppId);
-                sendPostRequestBodyMap.put("app_secret", robotAppSecret);
-                // 将 Map 转换为 JSON 字符串
-                ObjectMapper objectMapper = new ObjectMapper();
-                String json = objectMapper.writeValueAsString(sendPostRequestBodyMap);
-                //用Httpclient工具类发送POST请求
-                JSONObject getTenantAccessTokenResultResponseJson =
-                        HttpClient.doPostJson(getTokenAddress, json);
-                if (getTenantAccessTokenResultResponseJson.isEmpty()) {
-                    //发送消息失败代码
-                    Result<Object> failResult = new Result<>();
-                    failResult.setFlag(false);
-                    failResult.setMessage("get tenantAccessToken fail");
-                    failResult.setCode(StatusCode.ERROR);
-                    return failResult;
-                }
-                //把返回的json字符串转换为dto
-                GetTenantAccessTokenResDTO conversion =
-                        FastJSONObjectToDto.conversion(getTenantAccessTokenResultResponseJson, GetTenantAccessTokenResDTO.class);
-                //组装存入mysql中的数据
-                TableFlybookToken tableFlybookToken = new TableFlybookToken();
-                tableFlybookToken.setToken(conversion.getTenantAccessToken());
-                tableFlybookToken.setTokenExpire(conversion.getExpire());
-                tableFlybookToken.setTokenType(tokenType);
-                tableFlybookToken.setAppId(robotAppId);
-                tableFlybookToken.setAppSecret(robotAppSecret);
-                tableFlybookToken.setCreateAt(LocalDateTime.now());
-                tableFlyTokenRepository.save(tableFlybookToken);
+            //把返回的json字符串转换为dto
+            GetTenantAccessTokenResDTO conversion =
+                    FastJSONObjectToDto.conversion(getTenantAccessTokenResultResponseJson, GetTenantAccessTokenResDTO.class);
+            //组装存入mysql中的数据
+            TableFlybookToken tableFlybookToken = new TableFlybookToken();
+            tableFlybookToken.setToken(conversion.getTenantAccessToken());
+            tableFlybookToken.setTokenExpire(conversion.getExpire());
+            tableFlybookToken.setTokenType(tokenType);
+            tableFlybookToken.setAppId(robotAppId);
+            tableFlybookToken.setAppSecret(robotAppSecret);
+            tableFlybookToken.setCreateAt(LocalDateTime.now());
+            tableFlyTokenRepository.save(tableFlybookToken);
 
-                //把token存入到返回结果
-                Result<Object> returnGetTenantAccessTokenResult = new Result<>();
-                returnGetTenantAccessTokenResult.setData(tableFlybookToken);
-                return returnGetTenantAccessTokenResult;
-            }
-            //如果token没过期，则直接返回
+            //把token存入到返回结果
             Result<Object> returnGetTenantAccessTokenResult = new Result<>();
-            returnGetTenantAccessTokenResult.setData(token.get(0));
+            returnGetTenantAccessTokenResult.setData(tableFlybookToken);
             return returnGetTenantAccessTokenResult;
-        } catch (JsonProcessingException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         //发送消息失败代码
