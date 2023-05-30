@@ -33,118 +33,13 @@ public class WeatherServiceImpl implements WeatherService {
     public TableAddressAdcodeRepository tableAddressAdcodeRepository;
 
     /**
-     * 获取实时天气
-     * @return 实时天气JSON
-     */
-    @Override
-    public Result findLiveWeather(String weatherApiKey, String cityCode, String weatherCode) {
-
-        return sendRequestGetWeather(weatherApiKey, cityCode, weatherCode);
-    }
-
-    /**
-     * 获取实时天气并保存到mysql中
-     * @param weatherApiKey 天气apiKey
-     * @param cityCode      城市代码
-     * @param weatherCode   天气代码（实时天气或者未来天气预报）
-     * @return
-     */
-    @Override
-    public Result findLiveWeatherSaveToMysql(String weatherApiKey, String cityCode, String weatherCode) {
-        //获取实时天气
-        Result liveWeatherResult =
-                sendRequestGetWeather(weatherApiKey, cityCode, weatherCode);
-        String liveWeather = (String) liveWeatherResult.getData();
-        try {
-            //格式化实时天气
-            ObjectMapper mapper = new ObjectMapper();
-            LiveWeatherDTO liveWeatherDto = mapper.readValue(liveWeather, LiveWeatherDTO.class);
-            //组装mysql格式的实时天气
-            TableLiveWeather tableLiveWeather = new TableLiveWeather();
-            tableLiveWeather.setCityId(liveWeatherDto.getLives().get(0).getAdcode());
-            tableLiveWeather.setCityName(liveWeatherDto.getLives().get(0).getCity());
-            tableLiveWeather.setLiveWeather(liveWeatherDto.getLives().get(0).toString());
-            tableLiveWeather.setCreateAt(LocalDateTime.now());
-
-            //保存实时天气到mysql中
-            tableLiveWeatherRepository.save(tableLiveWeather);
-            //返回实时天气
-            Result<Object> successSaveLiveWeatherResult = new Result<>();
-            successSaveLiveWeatherResult.setData(tableLiveWeather);
-            return successSaveLiveWeatherResult;
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        //保存天气预报失败代码
-        Result<Object> failResult = new Result<>();
-        failResult.setFlag(false);
-        failResult.setMessage("save forecast weather fail");
-        failResult.setCode(StatusCode.ERROR);
-
-        return failResult;
-
-    }
-
-    /**
-     * 获取天气预报
-     * @return 天气预报JSON
-     */
-    @Override
-    public Result findForecastWeather(String weatherApiKey, String cityCode, String weatherCode) {
-
-        return sendRequestGetWeather(weatherApiKey, cityCode, weatherCode);
-
-    }
-
-    /**
-     * 获取天气预报并保存到mysql中
-     *
-     * @param weatherApiKey 天气apiKey
-     * @param cityCode      城市代码
-     * @param weatherCode   天气代码（实时天气或者未来天气预报）
-     * @return
-     */
-    @Override
-    public Result findForecastWeatherToMysql(String weatherApiKey, String cityCode, String weatherCode) {
-        try {
-            //获取天气预报
-            Result forecastWeatherResult =
-                    sendRequestGetWeather(weatherApiKey, cityCode, weatherCode);
-            String forecastWeather = (String) forecastWeatherResult.getData();
-            //格式化天气预报数据，转换成DTO
-                ObjectMapper mapper = new ObjectMapper();
-                ForecastWeatherDTO forecastWeatherDto = mapper.readValue(forecastWeather, ForecastWeatherDTO.class);
-                List<ForecastWeatherDTO.CityForecast> forecasts = forecastWeatherDto.getForecasts();
-                //组装mysql格式的天气预报数据
-                TableForecastWeather tableForecastWeather = new TableForecastWeather();
-                tableForecastWeather.setCityId(forecasts.get(0).getAdcode());
-                tableForecastWeather.setCityName(forecasts.get(0).getCity());
-                tableForecastWeather.setForecastWeather(forecastWeather);
-                tableForecastWeather.setCreateAt(LocalDateTime.now());
-                //保存天气预报到mysql中
-                tableForecastWeatherRepository.save(tableForecastWeather);
-            Result<Object> getForecastWeatherSuccessResult = new Result<>();
-            getForecastWeatherSuccessResult.setData(tableForecastWeather);
-            return getForecastWeatherSuccessResult;
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        //保存天气预报失败代码
-        Result<Object> failResult = new Result<>();
-        failResult.setFlag(false);
-        failResult.setMessage("save live weather fail");
-        failResult.setCode(StatusCode.ERROR);
-        return failResult;
-    }
-
-    /**
-     * 发送请求获取天气
+     * 获取天气
      * @param APIkey     请求地址链接
      * @param cityCode   城市代码
      * @param extensions 实时天气或者天气预报代码
      * @return
      */
-    private Result sendRequestGetWeather(String APIkey, String cityCode, String extensions) {
+    public Result getWeather(String APIkey, String cityCode, String extensions) {
         //获取当前时间
         LocalDateTime nowTime = LocalDateTime.now();
         //获取当前时间减去八小时后的时间,校验天气预报的过期时间
@@ -169,9 +64,9 @@ public class WeatherServiceImpl implements WeatherService {
                 System.out.println(reqJson);
                 //把返回结果转换为dto
                 ForecastWeatherDTO forecastWeatherDTO = FastJSONObjectToDto.conversion(reqJson, ForecastWeatherDTO.class);
-                //dto转换为json字符串
-                ObjectMapper objectMapper = new ObjectMapper();
                 try {
+                    //dto转换为json字符串
+                    ObjectMapper objectMapper = new ObjectMapper();
                     String forecastWeatherDTOString = objectMapper.writeValueAsString(forecastWeatherDTO);
                     System.out.println(forecastWeatherDTOString);
                     //组装数据并存入到mysql中
@@ -182,9 +77,9 @@ public class WeatherServiceImpl implements WeatherService {
                     tableForecastWeather.setCityName(forecastWeatherDTO.getForecasts().get(0).getCity());
                     tableForecastWeatherRepository.save(tableForecastWeather);
                     //组装返回结果
-                    Result<Object> getWeatherResult = new Result<>();
-                    getWeatherResult.setData(forecastWeatherDTO);
-                    return getWeatherResult;
+                    Result<Object> getForecastDtoResult = new Result<>();
+                    getForecastDtoResult.setData(forecastWeatherDTO);
+                    return getForecastDtoResult;
                 } catch (JsonProcessingException e) {
                     e.printStackTrace();
                 }
@@ -211,7 +106,7 @@ public class WeatherServiceImpl implements WeatherService {
                 JSONObject reqJson = HttpClient.doGet(GaodeConfig.GET_WEATHER_API_URL, reqParam);
                 System.out.println(reqJson);
                 //把返回结果转换为dto
-                ForecastWeatherDTO liveWeatherDTO = FastJSONObjectToDto.conversion(reqJson, ForecastWeatherDTO.class);
+                LiveWeatherDTO liveWeatherDTO = FastJSONObjectToDto.conversion(reqJson, LiveWeatherDTO.class);
                 //dto转换为json字符串
                 ObjectMapper objectMapper = new ObjectMapper();
                 try {
@@ -221,8 +116,8 @@ public class WeatherServiceImpl implements WeatherService {
                 TableLiveWeather tableLiveWeather = new TableLiveWeather();
                 tableLiveWeather.setLiveWeather(liveWeatherDTOString);
                 tableLiveWeather.setCreateAt(LocalDateTime.now());
-                tableLiveWeather.setCityId(liveWeatherDTO.getForecasts().get(0).getAdcode());
-                tableLiveWeather.setCityName(liveWeatherDTO.getForecasts().get(0).getCity());
+                tableLiveWeather.setCityId(liveWeatherDTO.getLives().get(0).getAdcode());
+                tableLiveWeather.setCityName(liveWeatherDTO.getLives().get(0).getCity());
                 tableLiveWeatherRepository.save(tableLiveWeather);
                 //组装返回结果
                 Result<Object> getWeatherResult = new Result<>();
@@ -233,16 +128,15 @@ public class WeatherServiceImpl implements WeatherService {
             }
             }
             //数据库中存在的话
-            Result<Object> getWeatherResult = new Result<>();
-            getWeatherResult.setData(liveWeather.get(0));
-            return getWeatherResult;
+            Result<Object> getLiveWeatherDtoResult = new Result<>();
+            getLiveWeatherDtoResult.setData(liveWeather.get(0).getLiveWeather());
+            return getLiveWeatherDtoResult;
         }
         //天气类型代码不存在
         Result<Object> failResult = new Result<>();
         failResult.setMessage("get weather extension is fail");
         failResult.setCode(StatusCode.ERROR);
         return failResult;
-
     }
 
     /**

@@ -1,8 +1,6 @@
 package com.fly.robot.service.impl;
 
 import com.alibaba.fastjson.JSONObject;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fly.robot.dao.TableFlyTokenRepository;
 import com.fly.robot.pojo.*;
@@ -165,7 +163,7 @@ public class FlyBookServiceImpl implements FlyBookService {
                 tableFlyTokenRepository.findTopByAppIdAndAppSecretOrderByCreateAtDesc(robotAppId, robotAppSecret);
         //获取当前时间
         LocalDateTime nowTime = LocalDateTime.now();
-        //如果没有token或者token已经过期，则获取一个新的token保存到mysql并返回数据
+        //如果没有token，则获取一个新的token保存到mysql并返回数据
         if (token == null || token.isEmpty()) {
             return doGetReqGetToken(getTokenAddress, robotAppId, robotAppSecret, tokenType);
         }
@@ -214,6 +212,7 @@ public class FlyBookServiceImpl implements FlyBookService {
             GetTenantAccessTokenResDTO conversion =
                     FastJSONObjectToDto.conversion(getTenantAccessTokenResultResponseJson, GetTenantAccessTokenResDTO.class);
             //组装存入mysql中的数据
+            //TODO 需要加密与解密敏感数据
             TableFlybookToken tableFlybookToken = new TableFlybookToken();
             tableFlybookToken.setToken(conversion.getTenantAccessToken());
             tableFlybookToken.setTokenExpire(conversion.getExpire());
