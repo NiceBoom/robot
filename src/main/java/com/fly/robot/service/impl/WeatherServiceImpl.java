@@ -50,10 +50,10 @@ public class WeatherServiceImpl implements WeatherService {
         //获取未来预报天气
         if(GaodeConfig.GET_FORECAST_WEATHER_CODE.equals(extensions)){
             //从数据库查询最新一条天气
-            List<TableForecastWeather> forecastWeather =
+            List<TableForecastWeather> tableForecastWeatherList =
                     tableForecastWeatherRepository.findFirstByCityIdOrderByCreateAtDesc(cityCode);
             //如果mysql中没有或者查询结果在8小时之前，则查询新天气
-            if(forecastWeather.isEmpty() || forecastWeather.get(0).getCreateAt().isBefore(eightHoursAgo)){
+            if(tableForecastWeatherList.isEmpty() || tableForecastWeatherList.get(0).getCreateAt().isBefore(eightHoursAgo)){
                 //组装请求参数
                 HashMap<String, String> reqParam = new HashMap<>();
                 reqParam.put("key", APIkey);
@@ -86,17 +86,27 @@ public class WeatherServiceImpl implements WeatherService {
 
             }
             //数据库中存在的话企且没有过期的话
-            Result<Object> getWeatherResult = new Result<>();
-            getWeatherResult.setData(forecastWeather.get(0));
-            return getWeatherResult;
+            Result<Object> getForecastWeatherResult = new Result<>();
+            //把tableForecastWeather转换为forecastDto
+            String forecastWeather = tableForecastWeatherList.get(0).getForecastWeather();
+            try {
+                // 创建ObjectMapper对象
+                ObjectMapper objectMapper = new ObjectMapper();
+                // 将字符串转换为DTO对象
+                ForecastWeatherDTO forecastWeatherDTO = objectMapper.readValue(forecastWeather, ForecastWeatherDTO.class);
+                getForecastWeatherResult.setData(forecastWeatherDTO);
+                return getForecastWeatherResult;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
         //获取实时天气消息
         if(GaodeConfig.GET_LIVE_WEATHER_CODE.equals(extensions)){
             //从数据库查询最新一条天气
-            List<TableLiveWeather> liveWeather =
+            List<TableLiveWeather> tableLiveWeatherList =
                     tableLiveWeatherRepository.findFirstByCityIdOrderByCreateAtDesc(cityCode);
             //数据库中不存在或者创建时间超过两小时的话
-            if(liveWeather.isEmpty() || liveWeather.get(0).getCreateAt().isBefore(twoHoursAgo)){
+            if(tableLiveWeatherList.isEmpty() || tableLiveWeatherList.get(0).getCreateAt().isBefore(twoHoursAgo)){
                 //组装请求参数
                 HashMap<String, String> reqParam = new HashMap<>();
                 reqParam.put("key", APIkey);
@@ -129,8 +139,18 @@ public class WeatherServiceImpl implements WeatherService {
             }
             //数据库中存在的话
             Result<Object> getLiveWeatherDtoResult = new Result<>();
-            getLiveWeatherDtoResult.setData(liveWeather.get(0).getLiveWeather());
-            return getLiveWeatherDtoResult;
+            //把tableForecastWeather转换为forecastDto
+            String liveWeather = tableLiveWeatherList.get(0).getLiveWeather();
+            try {
+                // 创建ObjectMapper对象
+                ObjectMapper objectMapper = new ObjectMapper();
+                // 将字符串转换为DTO对象
+                LiveWeatherDTO liveWeatherDTO = objectMapper.readValue(liveWeather, LiveWeatherDTO.class);
+                getLiveWeatherDtoResult.setData(liveWeatherDTO);
+                return getLiveWeatherDtoResult;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
         //天气类型代码不存在
         Result<Object> failResult = new Result<>();

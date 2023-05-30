@@ -5,10 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fly.robot.entity.FlyBookConfig;
 import com.fly.robot.entity.GaodeConfig;
 import com.fly.robot.entity.Result;
-import com.fly.robot.pojo.ForecastWeatherDTO;
-import com.fly.robot.pojo.GetAddressInfoFromGaodeDTO;
-import com.fly.robot.pojo.GetFlyBookMsgReceiveDTO;
-import com.fly.robot.pojo.TableFlybookToken;
+import com.fly.robot.pojo.*;
 import com.fly.robot.service.FlyBookService;
 import com.fly.robot.service.WeatherService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -96,21 +93,21 @@ public class FlyBookController {
         //校验推送类型
         //获取查询人的openid以及需要查询的天气的城市
         //TODO 后续需要优化消息类型判断
-        System.out.println("飞书推送的消息: "+flyBookMsgReceiveString);
+        System.out.println("飞书推送的消息: " + flyBookMsgReceiveString);
         //把字符串转换为dto
         try {
             ObjectMapper objectMapper = new ObjectMapper();
             GetFlyBookMsgReceiveDTO flyBookMsgReceiveDTO = objectMapper.readValue(flyBookMsgReceiveString, GetFlyBookMsgReceiveDTO.class);
 
-        //获取查询人的openId
-        String openId = flyBookMsgReceiveDTO.getEvent().getSender().getSender_id().getOpen_id();
-        System.out.println("查询人的openid: " + openId);
-        //获取查询人的具体消息
-        //消息格式为 消息类型：消息内容，为string的json字符串
-        String msgContent = flyBookMsgReceiveDTO.getEvent().getMessage().getContent();
-        System.out.println("查询人的消息内容: " + msgContent);
-        //获取群聊ID
-        String chatId = flyBookMsgReceiveDTO.getEvent().getMessage().getChat_id();
+            //获取查询人的openId
+            String openId = flyBookMsgReceiveDTO.getEvent().getSender().getSender_id().getOpen_id();
+            System.out.println("查询人的openid: " + openId);
+            //获取查询人的具体消息
+            //消息格式为 消息类型：消息内容，为string的json字符串
+            String msgContent = flyBookMsgReceiveDTO.getEvent().getMessage().getContent();
+            System.out.println("查询人的消息内容: " + msgContent);
+            //获取群聊ID
+            String chatId = flyBookMsgReceiveDTO.getEvent().getMessage().getChat_id();
             Map<String, Object> contentMap = objectMapper.readValue(msgContent, new TypeReference<Map<String, Object>>() {
             });
             // 使用转换后的Map对象进行操作,获取具体消息
@@ -120,19 +117,19 @@ public class FlyBookController {
             Result addressInfoByMsg = weatherService.findAddressInfoByMsg(GaodeConfig.GET_ADDRESS_ADCODE_URL, webApiKey, msgText);
             System.out.println("address info  is: " + addressInfoByMsg.toString());
             //提取出该地址的adcode代码
-            GetAddressInfoFromGaodeDTO addressInfoJson = (GetAddressInfoFromGaodeDTO) addressInfoByMsg.getData();
-            String adcode = addressInfoJson.getGeocodes().get(0).getAdcode();
+            TableAddressAdcode addressInfoJson = (TableAddressAdcode) addressInfoByMsg.getData();
+            String adcode = addressInfoJson.getAdcode();
             System.out.println("address adcode is: " + adcode);
             //获取该地址未来天气预报
             Result forecastWeather = weatherService.getWeather(webApiKey, adcode, GaodeConfig.GET_FORECAST_WEATHER_CODE);
             System.out.println("forecastWeather is: " + forecastWeather);
-            ForecastWeatherDTO forecastWeatherDto = (ForecastWeatherDTO) forecastWeather.getData();
+            ForecastWeatherDTO forecastWeatherDTO = (ForecastWeatherDTO) forecastWeather.getData();
             //从mysql获取tenantAccessToken
             Result tenantAccessToken = flyBookService.getToken(FlyBookConfig.GET_TENANT_ACCESS_TOKEN_ADDRESS, robotAppId, robotAppSecret, FlyBookConfig.GET_FLYBOOK_TENANT_ACCESS_TOKEN);
             TableFlybookToken tableFlybookToken = (TableFlybookToken) tenantAccessToken.getData();
             //发送改地址未来天气预报并@这个人
             Result result = flyBookService.
-                    sendForecastWeatherMsgToOpenId(FlyBookConfig.SEND_MSG_TO_USER_URL, tableFlybookToken.getToken(), openId, chatId, forecastWeatherDto);
+                    sendForecastWeatherMsgToOpenId(FlyBookConfig.SEND_MSG_TO_USER_URL, tableFlybookToken.getToken(), openId, chatId, forecastWeatherDTO);
             System.out.println(result.getData().toString());
         } catch (Exception e) {
             e.printStackTrace();

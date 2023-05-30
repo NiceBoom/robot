@@ -18,7 +18,7 @@ public class FlyBookConfig {
     public static final String GET_FLYBOOK_USER_ACCESS_TOKEN = "user_access_token";
 
     public static final String YANG_GUANG_OPEN_ID="ou_43204aba97d7eae211a3dac2e68e4a78";
-    public static final String CHAT_ID="https://open.feishu.cn/open-apis/im/v1/messages";
+    public static final String CHAT_ID="oc_4c4e9549500b820ca27482cf088c919c";
 
 
 }
