@@ -23,15 +23,17 @@ import java.util.List;
 @EnableScheduling
 public class WeatherController {
 
-    @Autowired
-    private WeatherService weatherService;
+    private final WeatherService weatherService;
     private final TableLiveWeatherRepository liveWeatherRepository;
     private final TableForecastWeatherRepository forecastWeatherRepository;
 
     @Autowired
-    public WeatherController(TableLiveWeatherRepository liveWeatherRepository, TableForecastWeatherRepository forecastWeatherRepository) {
+    public WeatherController(TableLiveWeatherRepository liveWeatherRepository,
+                             TableForecastWeatherRepository forecastWeatherRepository,
+                             WeatherService weatherService) {
         this.liveWeatherRepository = liveWeatherRepository;
         this.forecastWeatherRepository = forecastWeatherRepository;
+        this.weatherService = weatherService;
     }
 
     @Value("${gaode.web-api-key}")

@@ -250,7 +250,6 @@ public class FlyBookServiceImpl implements FlyBookService {
     public Result sendForecastWeatherMsgToOpenId(String sendMsgUrl,
                                                  String tenantAccessToken,
                                                  String openId,
-                                                 String chatId,
                                                  ForecastWeatherDTO forecastWeatherDto) throws Exception {
         //创建飞书API Client
         Client feishuClient = Client.newBuilder(robotAppId, robotAppSecret).build();
@@ -262,7 +261,7 @@ public class FlyBookServiceImpl implements FlyBookService {
         System.out.println("组装好的请求体： " + createMessageReqBody.toString());
         //创建消息文本
         HashMap<String, String> messageContentMap = new HashMap<>();
-        messageContentMap.put("text", WeatherDtoToMsg.conversionForecastWeatherDtoToMsg(forecastWeatherDto));
+        messageContentMap.put("text", WeatherDtoToMsg.conversionSearchForecastWeatherDtoToMsg(forecastWeatherDto));
         //转换为json字符串
         ObjectMapper objectMapper = new ObjectMapper();
         String jsonString = objectMapper.writeValueAsString(messageContentMap);

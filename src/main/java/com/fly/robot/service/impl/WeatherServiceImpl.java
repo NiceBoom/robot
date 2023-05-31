@@ -34,6 +34,7 @@ public class WeatherServiceImpl implements WeatherService {
 
     /**
      * 获取天气
+     *
      * @param APIkey     请求地址链接
      * @param cityCode   城市代码
      * @param extensions 实时天气或者天气预报代码
@@ -48,12 +49,12 @@ public class WeatherServiceImpl implements WeatherService {
         LocalDateTime twoHoursAgo = nowTime.minus(2, ChronoUnit.HOURS);
 
         //获取未来预报天气
-        if(GaodeConfig.GET_FORECAST_WEATHER_CODE.equals(extensions)){
+        if (GaodeConfig.GET_FORECAST_WEATHER_CODE.equals(extensions)) {
             //从数据库查询最新一条天气
             List<TableForecastWeather> tableForecastWeatherList =
                     tableForecastWeatherRepository.findFirstByCityIdOrderByCreateAtDesc(cityCode);
             //如果mysql中没有或者查询结果在8小时之前，则查询新天气
-            if(tableForecastWeatherList.isEmpty() || tableForecastWeatherList.get(0).getCreateAt().isBefore(eightHoursAgo)){
+            if (tableForecastWeatherList.isEmpty() || tableForecastWeatherList.get(0).getCreateAt().isBefore(eightHoursAgo)) {
                 //组装请求参数
                 HashMap<String, String> reqParam = new HashMap<>();
                 reqParam.put("key", APIkey);
@@ -85,7 +86,7 @@ public class WeatherServiceImpl implements WeatherService {
                 }
 
             }
-            //数据库中存在的话企且没有过期的话
+            //数据库中存在的话而且没有过期的话
             Result<Object> getForecastWeatherResult = new Result<>();
             //把tableForecastWeather转换为forecastDto
             String forecastWeather = tableForecastWeatherList.get(0).getForecastWeather();
@@ -101,12 +102,12 @@ public class WeatherServiceImpl implements WeatherService {
             }
         }
         //获取实时天气消息
-        if(GaodeConfig.GET_LIVE_WEATHER_CODE.equals(extensions)){
+        if (GaodeConfig.GET_LIVE_WEATHER_CODE.equals(extensions)) {
             //从数据库查询最新一条天气
             List<TableLiveWeather> tableLiveWeatherList =
                     tableLiveWeatherRepository.findFirstByCityIdOrderByCreateAtDesc(cityCode);
             //数据库中不存在或者创建时间超过两小时的话
-            if(tableLiveWeatherList.isEmpty() || tableLiveWeatherList.get(0).getCreateAt().isBefore(twoHoursAgo)){
+            if (tableLiveWeatherList.isEmpty() || tableLiveWeatherList.get(0).getCreateAt().isBefore(twoHoursAgo)) {
                 //组装请求参数
                 HashMap<String, String> reqParam = new HashMap<>();
                 reqParam.put("key", APIkey);
@@ -122,20 +123,20 @@ public class WeatherServiceImpl implements WeatherService {
                 try {
                     String liveWeatherDTOString = objectMapper.writeValueAsString(liveWeatherDTO);
                     System.out.println(liveWeatherDTOString);
-                //组装数据并存入到mysql中
-                TableLiveWeather tableLiveWeather = new TableLiveWeather();
-                tableLiveWeather.setLiveWeather(liveWeatherDTOString);
-                tableLiveWeather.setCreateAt(LocalDateTime.now());
-                tableLiveWeather.setCityId(liveWeatherDTO.getLives().get(0).getAdcode());
-                tableLiveWeather.setCityName(liveWeatherDTO.getLives().get(0).getCity());
-                tableLiveWeatherRepository.save(tableLiveWeather);
-                //组装返回结果
-                Result<Object> getWeatherResult = new Result<>();
-                getWeatherResult.setData(liveWeatherDTO);
-                return getWeatherResult;
-            } catch (JsonProcessingException e) {
-                e.printStackTrace();
-            }
+                    //组装数据并存入到mysql中
+                    TableLiveWeather tableLiveWeather = new TableLiveWeather();
+                    tableLiveWeather.setLiveWeather(liveWeatherDTOString);
+                    tableLiveWeather.setCreateAt(LocalDateTime.now());
+                    tableLiveWeather.setCityId(liveWeatherDTO.getLives().get(0).getAdcode());
+                    tableLiveWeather.setCityName(liveWeatherDTO.getLives().get(0).getCity());
+                    tableLiveWeatherRepository.save(tableLiveWeather);
+                    //组装返回结果
+                    Result<Object> getWeatherResult = new Result<>();
+                    getWeatherResult.setData(liveWeatherDTO);
+                    return getWeatherResult;
+                } catch (JsonProcessingException e) {
+                    e.printStackTrace();
+                }
             }
             //数据库中存在的话
             Result<Object> getLiveWeatherDtoResult = new Result<>();
@@ -160,9 +161,10 @@ public class WeatherServiceImpl implements WeatherService {
     }
 
     /**
-     *  从高德地图api查找消息地址的具体数据
-     * @param getAddressInfoUrl 获取地址具体信息的URL
-     * @param gaodeWebApiKey 高德ApiKey
+     * 从高德地图api查找消息地址的具体数据
+     *
+     * @param getAddressInfoUrl  获取地址具体信息的URL
+     * @param gaodeWebApiKey     高德ApiKey
      * @param findAddressInfoMsg 需要查找具体信息的地址
      * @return
      */
@@ -171,7 +173,7 @@ public class WeatherServiceImpl implements WeatherService {
         //查询该地址在mysql中是否存在
         List<TableAddressAdcode> findAdcodeByAddress = tableAddressAdcodeRepository.findByAddress(findAddressInfoMsg);
         //如果数据库中不存在，则发送请求查询并将结果保存到mysql，返回信息
-        if(findAdcodeByAddress.isEmpty()){
+        if (findAdcodeByAddress.isEmpty()) {
             //创建请求体map信息，携带AppId与AppSecret
             Map<String, String> sendGetRequestParamMap = new HashMap();
             sendGetRequestParamMap.put("key", gaodeWebApiKey);
@@ -183,6 +185,7 @@ public class WeatherServiceImpl implements WeatherService {
             GetAddressInfoFromGaodeDTO conversion = fastJSONObjectToDto.conversion(getAddressInfoResponseJson, GetAddressInfoFromGaodeDTO.class);
             //提取出其中的adcode代码
             String addressAdcode = conversion.getGeocodes().get(0).getAdcode();
+            System.out.println("-->> 根据请求消息获取的adcode代码是：" + addressAdcode);
             //组装存到mysql中的数据
             TableAddressAdcode tableAddressAdcode = new TableAddressAdcode();
             tableAddressAdcode.setAddress(findAddressInfoMsg);

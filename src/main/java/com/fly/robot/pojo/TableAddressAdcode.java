@@ -10,8 +10,8 @@ public class TableAddressAdcode {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
 
-    //自增主键weather_id
-    @Column(name = "address_id")
+    //自增主键id
+    @Column(name = "id")
     private Integer addressId;
 
     //中文地址address

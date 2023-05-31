@@ -57,13 +57,13 @@ public class GetAddressInfoFromGaodeDTO {
         private String province;//地址所在的省份名。注：四大直辖市也算省级单位
         private String citycode;//城市编码
         private String city;//地址所在城市名
-        private List<String> district;//地址所在的区
-        private List<String> township;
+        private Object district;//地址所在的区
+        private Object township;
         private Neighborhood neighborhood;
         private Building building;
         private String adcode;//区域编码
-        private List<String> street;//街道
-        private List<String> number;//门牌号
+        private Object street;//街道
+        private Object number;//门牌号
         private String location;//坐标点 经纬度
         private String level;//匹配级别。参见地理编码匹配级别列表
 
@@ -107,19 +107,19 @@ public class GetAddressInfoFromGaodeDTO {
             this.city = city;
         }
 
-        public List<String> getDistrict() {
+        public Object getDistrict() {
             return district;
         }
 
-        public void setDistrict(List<String> district) {
+        public void setDistrict(Object district) {
             this.district = district;
         }
 
-        public List<String> getTownship() {
+        public Object getTownship() {
             return township;
         }
 
-        public void setTownship(List<String> township) {
+        public void setTownship(Object township) {
             this.township = township;
         }
 
@@ -147,19 +147,19 @@ public class GetAddressInfoFromGaodeDTO {
             this.adcode = adcode;
         }
 
-        public List<String> getStreet() {
+        public Object getStreet() {
             return street;
         }
 
-        public void setStreet(List<String> street) {
+        public void setStreet(Object street) {
             this.street = street;
         }
 
-        public List<String> getNumber() {
+        public Object getNumber() {
             return number;
         }
 
-        public void setNumber(List<String> number) {
+        public void setNumber(Object number) {
             this.number = number;
         }
 
@@ -180,43 +180,43 @@ public class GetAddressInfoFromGaodeDTO {
         }
 
         public static class Neighborhood {
-            private List<String> name;
-            private List<String> type;
+            private Object name;
+            private Object type;
 
-            public List<String> getName() {
+            public Object getName() {
                 return name;
             }
 
-            public void setName(List<String> name) {
+            public void setName(Object name) {
                 this.name = name;
             }
 
-            public List<String> getType() {
+            public Object getType() {
                 return type;
             }
 
-            public void setType(List<String> type) {
+            public void setType(Object type) {
                 this.type = type;
             }
         }
 
         public static class Building {
-            private List<String> name;
-            private List<String> type;
+            private Object name;
+            private Object type;
 
-            public List<String> getName() {
+            public Object getName() {
                 return name;
             }
 
-            public void setName(List<String> name) {
+            public void setName(Object name) {
                 this.name = name;
             }
 
-            public List<String> getType() {
+            public Object getType() {
                 return type;
             }
 
-            public void setType(List<String> type) {
+            public void setType(Object type) {
                 this.type = type;
             }
         }

@@ -44,7 +44,6 @@ public class FlyBookController {
     //发送实时天气数据消息
     //每天早八点35，每隔一小时发一次，一直到晚上21.30 发送实时天气数据
     //或者也可以手动发送
-//    @Scheduled(cron = "0/5 * * * * ? ")
     @Scheduled(cron = "0 35 8,9,10,11,12,13,14,15,16,17,18,19,20,21 * * ? ")
     @PostMapping("/sendLiveWeatherMsg")
     Result sendLiveWeatherMsg() {
@@ -127,9 +126,9 @@ public class FlyBookController {
             //从mysql获取tenantAccessToken
             Result tenantAccessToken = flyBookService.getToken(FlyBookConfig.GET_TENANT_ACCESS_TOKEN_ADDRESS, robotAppId, robotAppSecret, FlyBookConfig.GET_FLYBOOK_TENANT_ACCESS_TOKEN);
             TableFlybookToken tableFlybookToken = (TableFlybookToken) tenantAccessToken.getData();
-            //发送改地址未来天气预报并@这个人
+            //发送制定天气预报到请求人
             Result result = flyBookService.
-                    sendForecastWeatherMsgToOpenId(FlyBookConfig.SEND_MSG_TO_USER_URL, tableFlybookToken.getToken(), openId, chatId, forecastWeatherDTO);
+                    sendForecastWeatherMsgToOpenId(FlyBookConfig.SEND_MSG_TO_USER_URL, tableFlybookToken.getToken(), openId, forecastWeatherDTO);
             System.out.println(result.getData().toString());
         } catch (Exception e) {
             e.printStackTrace();
