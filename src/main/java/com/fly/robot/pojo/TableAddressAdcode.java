@@ -22,6 +22,8 @@ public class TableAddressAdcode {
     @Column(name = "adcode")
     private String adcode;
 
+    @Column(name = "gaode_address_info")
+    private String gaodeAddressInfo;
     //创建时间
     @Column(name = "create_at")
     private LocalDateTime createAt;
@@ -51,6 +53,14 @@ public class TableAddressAdcode {
 
     public void setAdcode(String adcode) {
         this.adcode = adcode;
+    }
+
+    public String getGaodeAddressInfo() {
+        return gaodeAddressInfo;
+    }
+
+    public void setGaodeAddressInfo(String gaodeAddressInfo) {
+        this.gaodeAddressInfo = gaodeAddressInfo;
     }
 
     public LocalDateTime getCreateAt() {

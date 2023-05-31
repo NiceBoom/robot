@@ -172,31 +172,40 @@ public class WeatherServiceImpl implements WeatherService {
     public Result findAddressInfoByMsg(String getAddressInfoUrl, String gaodeWebApiKey, String findAddressInfoMsg) {
         //查询该地址在mysql中是否存在
         List<TableAddressAdcode> findAdcodeByAddress = tableAddressAdcodeRepository.findByAddress(findAddressInfoMsg);
-        //如果数据库中不存在，则发送请求查询并将结果保存到mysql，返回信息
-        if (findAdcodeByAddress.isEmpty()) {
-            //创建请求体map信息，携带AppId与AppSecret
-            Map<String, String> sendGetRequestParamMap = new HashMap();
-            sendGetRequestParamMap.put("key", gaodeWebApiKey);
-            sendGetRequestParamMap.put("address", findAddressInfoMsg);
-            //发送请求
-            JSONObject getAddressInfoResponseJson = HttpClient.doGet(getAddressInfoUrl, sendGetRequestParamMap);
-            //把fastjson的JSONObject 转换为jackson中的JSONObject
-            FastJSONObjectToDto fastJSONObjectToDto = new FastJSONObjectToDto();
-            GetAddressInfoFromGaodeDTO conversion = fastJSONObjectToDto.conversion(getAddressInfoResponseJson, GetAddressInfoFromGaodeDTO.class);
-            //提取出其中的adcode代码
-            String addressAdcode = conversion.getGeocodes().get(0).getAdcode();
-            System.out.println("-->> 根据请求消息获取的adcode代码是：" + addressAdcode);
-            //组装存到mysql中的数据
-            TableAddressAdcode tableAddressAdcode = new TableAddressAdcode();
-            tableAddressAdcode.setAddress(findAddressInfoMsg);
-            tableAddressAdcode.setAdcode(addressAdcode);
-            tableAddressAdcode.setCreateAt(LocalDateTime.now());
-            //保存结果到数据库
-            tableAddressAdcodeRepository.save(tableAddressAdcode);
-            //返回查询结果
-            Result<Object> getAddressInfoResponseResult = new Result<>();
-            getAddressInfoResponseResult.setData(tableAddressAdcode);
-            return getAddressInfoResponseResult;
+
+            //如果数据库中不存在，则发送请求查询并将结果保存到mysql，返回信息
+            if (findAdcodeByAddress.isEmpty()) {
+                //创建请求体map信息，携带AppId与AppSecret
+                Map<String, String> sendGetRequestParamMap = new HashMap();
+                sendGetRequestParamMap.put("key", gaodeWebApiKey);
+                sendGetRequestParamMap.put("address", findAddressInfoMsg);
+                //发送请求
+                JSONObject getAddressInfoResponseJson = HttpClient.doGet(getAddressInfoUrl, sendGetRequestParamMap);
+                //把fastjson的JSONObject 转换为jackson中的JSONObject
+                FastJSONObjectToDto fastJSONObjectToDto = new FastJSONObjectToDto();
+                GetAddressInfoFromGaodeDTO getAddressInfoFromGaodeDTO = fastJSONObjectToDto.conversion(getAddressInfoResponseJson, GetAddressInfoFromGaodeDTO.class);
+                //提取出其中的adcode代码
+                String addressAdcode = getAddressInfoFromGaodeDTO.getGeocodes().get(0).getAdcode();
+                System.out.println("-->> 根据请求消息获取的adcode代码是：" + addressAdcode);
+                //把查询到的高德地址info转换成string
+                ObjectMapper objectMapper = new ObjectMapper();
+                try {
+                String addressInfoString = objectMapper.writeValueAsString(getAddressInfoFromGaodeDTO);
+                //组装存到mysql中的数据
+                TableAddressAdcode tableAddressAdcode = new TableAddressAdcode();
+                tableAddressAdcode.setAddress(findAddressInfoMsg);
+                tableAddressAdcode.setAdcode(addressAdcode);
+                tableAddressAdcode.setCreateAt(LocalDateTime.now());
+                tableAddressAdcode.setGaodeAddressInfo(addressInfoString);
+                //保存结果到数据库
+                tableAddressAdcodeRepository.save(tableAddressAdcode);
+                //返回查询结果
+                Result<Object> getAddressInfoResponseResult = new Result<>();
+                getAddressInfoResponseResult.setData(tableAddressAdcode);
+                return getAddressInfoResponseResult;
+            }catch(Exception e){
+                e.printStackTrace();
+            }
         }
         //若数据库中存在，则返回查询结果
         Result<Object> getAddressInfoResponseResult = new Result<>();
