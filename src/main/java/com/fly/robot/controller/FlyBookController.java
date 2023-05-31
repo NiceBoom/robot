@@ -119,17 +119,32 @@ public class FlyBookController {
             TableAddressAdcode addressInfoJson = (TableAddressAdcode) addressInfoByMsg.getData();
             String adcode = addressInfoJson.getAdcode();
             System.out.println("address adcode is: " + adcode);
-            //获取该地址未来天气预报
-            Result forecastWeather = weatherService.getWeather(webApiKey, adcode, GaodeConfig.GET_FORECAST_WEATHER_CODE);
-            System.out.println("forecastWeather is: " + forecastWeather);
-            ForecastWeatherDTO forecastWeatherDTO = (ForecastWeatherDTO) forecastWeather.getData();
             //从mysql获取tenantAccessToken
             Result tenantAccessToken = flyBookService.getToken(FlyBookConfig.GET_TENANT_ACCESS_TOKEN_ADDRESS, robotAppId, robotAppSecret, FlyBookConfig.GET_FLYBOOK_TENANT_ACCESS_TOKEN);
             TableFlybookToken tableFlybookToken = (TableFlybookToken) tenantAccessToken.getData();
-            //发送制定天气预报到请求人
-            Result result = flyBookService.
-                    sendForecastWeatherMsgToOpenId(FlyBookConfig.SEND_MSG_TO_USER_URL, tableFlybookToken.getToken(), openId, forecastWeatherDTO);
-            System.out.println(result.getData().toString());
+            //如果消息内包含“实时”、“现在”、“目前”则发送实时天气消息
+            if (msgText.contains("实时") || msgText.contains("现在") || msgText.contains("目前") ||
+                    msgText.contains("当前") || msgText.contains("当下") || msgText.contains("眼下") || msgText.contains("现状") ||
+                    msgText.contains("本时") || msgText.contains("即时")) {
+                //获取该地区实时天气预报
+                Result getLiveWeatherResult = weatherService.getWeather(webApiKey, adcode, GaodeConfig.GET_LIVE_WEATHER_CODE);
+                //提取出天气预报
+                LiveWeatherDTO liveWeatherDTO = (LiveWeatherDTO) getLiveWeatherResult.getData();
+                //发送实时天气到请求人
+                Result result = flyBookService.
+                        sendWeatherMsgToOpenId(FlyBookConfig.SEND_MSG_TO_USER_URL, GaodeConfig.GET_LIVE_WEATHER_CODE, tableFlybookToken.getToken(), openId, liveWeatherDTO);
+                System.out.println(result.getData().toString());
+                return result.toString();
+            } else {
+                //获取该地址未来天气预报
+                Result forecastWeather = weatherService.getWeather(webApiKey, adcode, GaodeConfig.GET_FORECAST_WEATHER_CODE);
+                System.out.println("forecastWeather is: " + forecastWeather);
+                ForecastWeatherDTO forecastWeatherDTO = (ForecastWeatherDTO) forecastWeather.getData();
+                //发送未来天气预报到请求人
+                Result result = flyBookService.
+                        sendWeatherMsgToOpenId(FlyBookConfig.SEND_MSG_TO_USER_URL, GaodeConfig.GET_FORECAST_WEATHER_CODE, tableFlybookToken.getToken(), openId, forecastWeatherDTO);
+                System.out.println(result.getData().toString());
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }

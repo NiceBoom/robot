@@ -1,7 +1,6 @@
 package com.fly.robot.service;
 
 import com.fly.robot.entity.Result;
-import com.fly.robot.pojo.ForecastWeatherDTO;
 
 public interface FlyBookService {
 
@@ -36,8 +35,8 @@ public interface FlyBookService {
      * @param sendMsgUrl         发送消息地址
      * @param tenantAccessToken
      * @param openId             查询人的OpenId
-     * @param forecastWeatherDto 未来的天气预报信息
+     * @param weatherDtoString 天气dtoString
      * @return
      */
-    Result sendForecastWeatherMsgToOpenId(String sendMsgUrl, String tenantAccessToken, String openId, ForecastWeatherDTO forecastWeatherDto) throws Exception;
+    Result sendWeatherMsgToOpenId(String sendMsgUrl, String weatherCode, String tenantAccessToken, String openId, Object weatherDto) throws Exception;
 }

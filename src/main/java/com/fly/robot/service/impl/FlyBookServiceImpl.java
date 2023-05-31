@@ -3,6 +3,7 @@ package com.fly.robot.service.impl;
 import com.alibaba.fastjson.JSONObject;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fly.robot.dao.TableFlyTokenRepository;
+import com.fly.robot.entity.GaodeConfig;
 import com.fly.robot.pojo.*;
 import com.fly.robot.dao.TableForecastWeatherRepository;
 import com.fly.robot.dao.TableLiveWeatherRepository;
@@ -240,17 +241,20 @@ public class FlyBookServiceImpl implements FlyBookService {
     /**
      * 发送查询地址的未来天气预报并@查询人
      *
-     * @param sendMsgUrl         发送消息地址
+     * @param sendMsgUrl        发送消息地址
      * @param tenantAccessToken
-     * @param openId             查询人的OpenId
-     * @param forecastWeatherDto 未来的天气预报信息
+     * @param openId            查询人的OpenId
+     * @param weatherCode       天气类型代码
+     * @param weatherDto        天气预报信息
      * @return
      */
     @Override
-    public Result sendForecastWeatherMsgToOpenId(String sendMsgUrl,
-                                                 String tenantAccessToken,
-                                                 String openId,
-                                                 ForecastWeatherDTO forecastWeatherDto) throws Exception {
+    public Result sendWeatherMsgToOpenId(String sendMsgUrl,
+                                         String weatherCode,
+                                         String tenantAccessToken,
+                                         String openId,
+                                         Object weatherDto) throws Exception {
+
         //创建飞书API Client
         Client feishuClient = Client.newBuilder(robotAppId, robotAppSecret).build();
         //创建请求体
@@ -259,12 +263,44 @@ public class FlyBookServiceImpl implements FlyBookService {
         //TODO 优化消息类型 https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/im-v1/message/create 到pojo里
         createMessageReqBody.setMsgType("text");
         System.out.println("组装好的请求体： " + createMessageReqBody.toString());
+        //如果是请求发送实时天气消息
+        if (GaodeConfig.GET_LIVE_WEATHER_CODE.equals(weatherCode)) {
+            //创建消息文本
+            HashMap<String, String> liveMessageContentMap = new HashMap<>();
+            liveMessageContentMap.put("text", WeatherDtoToMsg.conversionSearchLiveWeatherDtoToMsg((LiveWeatherDTO) weatherDto));
+            //转换为json字符串
+            ObjectMapper objectMapper = new ObjectMapper();
+            String jsonString = objectMapper.writeValueAsString(liveMessageContentMap);
+            System.out.println(jsonString.toString());
+            createMessageReqBody.setContent(jsonString);
+            //发起请求
+            CreateMessageResp resp = feishuClient.im().message()
+                    .create(CreateMessageReq.newBuilder()
+                            .receiveIdType("open_id")
+                            .createMessageReqBody(createMessageReqBody)
+                            .build());
+            System.out.println("响应消息" + resp.toString());
+            // 处理服务端错误
+            if (!resp.success()) {
+                System.out.println(String.format("code:%s,msg:%s,reqId:%s"
+                        , resp.getCode(), resp.getMsg(), resp.getRequestId()));
+                Result failResult = new Result();
+                failResult.setCode(StatusCode.ERROR);
+                failResult.setMessage(String.format("code:%s,msg:%s,reqId:%s"
+                        , resp.getCode(), resp.getMsg(), resp.getRequestId()));
+                failResult.setData(resp.toString());
+                return failResult;
+            }
+            Result successResult = new Result();
+            successResult.setData(resp);
+            return successResult;
+        }
         //创建消息文本
-        HashMap<String, String> messageContentMap = new HashMap<>();
-        messageContentMap.put("text", WeatherDtoToMsg.conversionSearchForecastWeatherDtoToMsg(forecastWeatherDto));
+        HashMap<String, String> forecastMessageContentMap = new HashMap<>();
+        forecastMessageContentMap.put("text", WeatherDtoToMsg.conversionSearchForecastWeatherDtoToMsg((ForecastWeatherDTO) weatherDto));
         //转换为json字符串
         ObjectMapper objectMapper = new ObjectMapper();
-        String jsonString = objectMapper.writeValueAsString(messageContentMap);
+        String jsonString = objectMapper.writeValueAsString(forecastMessageContentMap);
         System.out.println(jsonString.toString());
         createMessageReqBody.setContent(jsonString);
         //发起请求
