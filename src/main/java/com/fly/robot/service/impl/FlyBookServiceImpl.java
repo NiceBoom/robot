@@ -3,12 +3,8 @@ package com.fly.robot.service.impl;
 import com.alibaba.fastjson.JSONObject;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fly.robot.dao.TableFlyTokenRepository;
-import com.fly.robot.entity.GaodeConfig;
 import com.fly.robot.pojo.*;
-import com.fly.robot.dao.TableForecastWeatherRepository;
-import com.fly.robot.dao.TableLiveWeatherRepository;
 import com.fly.robot.entity.Result;
-import com.fly.robot.entity.StatusCode;
 import com.fly.robot.service.FlyBookService;
 import com.fly.robot.util.FastJSONObjectToDto;
 import com.fly.robot.util.HttpClient;
@@ -18,8 +14,6 @@ import com.lark.oapi.service.im.v1.model.CreateMessageReq;
 import com.lark.oapi.service.im.v1.model.CreateMessageReqBody;
 import com.lark.oapi.service.im.v1.model.CreateMessageResp;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -30,122 +24,27 @@ import java.util.Map;
 
 @Service
 public class FlyBookServiceImpl implements FlyBookService {
-
-    @Autowired
-    private TableLiveWeatherRepository tableLiveWeatherRepository;
-
-    @Autowired
-    private TableForecastWeatherRepository tableForecastWeatherRepository;
-
     @Autowired
     private TableFlyTokenRepository tableFlyTokenRepository;
 
-    @Value("${feishu.appid}")
-    private String robotAppId; //飞书机器人appId
-
-    @Value("${feishu.app-secret}")
-    private String robotAppSecret; //飞书机器人秘钥
-
     /**
-     * 发送实时天气数据消息
-     *
-     * @param robotWebHookAddress 消息机器人web hook地址
-     * @param cityId              城市代码
+     * 发送天气消息到群聊中
+     * @param robotWebHookAddress 群聊机器人发送消息 webhook地址
+     * @param flyBookWeatherCode  天气类型代码
+     * @param weatherDTO          天气数据
      * @return
+     * @throws Exception
      */
-    @Override
-    public Result sendLiveWeatherMsg(String robotWebHookAddress, String cityId) {
-        try {
-            //从mysql获取最新一条实时天气数据
-            List<TableLiveWeather> liveWeatherFromMysql = tableLiveWeatherRepository.findFirstByCityIdOrderByCreateAtDesc(cityId);
-            String liveWeather = liveWeatherFromMysql.get(0).getLiveWeather();
-
-            //格式化实时天气数据，转换成DTO
-            ObjectMapper mapper = new ObjectMapper();
-            LiveWeatherDTO liveWeatherDto = mapper.readValue(liveWeather, LiveWeatherDTO.class);
-            //使用工具类转换dto为天气消息
-            String liveWeatherMsg = WeatherDtoToMsg.conversionLiveWeatherDtoToMsg(liveWeatherDto);
-
-            return sendWeatherMsg(robotWebHookAddress, liveWeatherMsg);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        //发送实时天气失败代码
-        Result<Object> failResult = new Result<>();
-        failResult.setFlag(false);
-        failResult.setMessage("send live weather msg fail");
-        failResult.setCode(StatusCode.ERROR);
-        return failResult;
-    }
-
-    /**
-     * 发送未来天气预报消息
-     *
-     * @param robotWebHookAddress 消息机器人web hook地址
-     * @return
-     */
-    @Override
-    public Result sendForecastWeatherMsg(String robotWebHookAddress, String cityId) {
-        try {
-            //从mysql查找最新的一条天气预报数据
-            List<TableForecastWeather> forecastWeatherFromMysql = tableForecastWeatherRepository.findFirstByCityIdOrderByCreateAtDesc(cityId);
-            //获取天气预报信息
-            String forecastWeather = forecastWeatherFromMysql.get(0).getForecastWeather();
-            //格式化天气预报数据，转换成DTO
-            ObjectMapper mapper = new ObjectMapper();
-            ForecastWeatherDTO forecastWeatherDto = mapper.readValue(forecastWeather, ForecastWeatherDTO.class);
-            //使用dto转换msg工具类
-            String forecastWeatherMsg = WeatherDtoToMsg.conversionForecastWeatherDtoToMsg(forecastWeatherDto);
-
-            return sendWeatherMsg(robotWebHookAddress, forecastWeatherMsg);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        //发送天气预报失败代码
-        Result<Object> failResult = new Result<>();
-        failResult.setFlag(false);
-        failResult.setMessage("send forecast weather msg fail");
-        failResult.setCode(StatusCode.ERROR);
-        return failResult;
-    }
-
-    /**
-     * 发送天气消息
-     *
-     * @param sendWeatherMsgApi 天气机器人hook链接
-     * @param weatherMsg        组装好的天气消息
-     * @return 返回的发送情况json
-     */
-    private Result sendWeatherMsg(String sendWeatherMsgApi, String weatherMsg) {
-
-        //创建请求体map信息，携带AppId与AppSecret
+    public String sendDefaultCityWeatherMsgToGroupChat(String robotWebHookAddress, String flyBookWeatherCode, WeatherDTO weatherDTO) throws Exception {
         Map<String, Object> sendWeatherMsgRequestBody = new HashMap();
-        sendWeatherMsgRequestBody.put("msg_type", "text");
+        ObjectMapper mapToStringMapper = new ObjectMapper();
         Map<String, String> requestBodyContext = new HashMap();
-        requestBodyContext.put("text", weatherMsg);
+
+        requestBodyContext.put("text", WeatherDtoToMsg.conversionWeatherDtoToMsg(weatherDTO, flyBookWeatherCode));
         sendWeatherMsgRequestBody.put("content", requestBodyContext);
+        sendWeatherMsgRequestBody.put("msg_type", "text");
 
-        try {
-            // 将 Map 转换为 JSON 字符串
-            ObjectMapper objectMapper = new ObjectMapper();
-            String json = objectMapper.writeValueAsString(sendWeatherMsgRequestBody);
-            //发送POST请求
-            JSONObject sendWeatherMsgResponseJson =
-                    HttpClient.doPostJson(sendWeatherMsgApi, json);
-            //返回结果
-            Result<Object> sendWeatherMsgResult = new Result<>();
-            sendWeatherMsgResult.setData(sendWeatherMsgResponseJson);
-            return sendWeatherMsgResult;
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        //发送消息失败代码
-        Result<Object> failResult = new Result<>();
-        failResult.setFlag(false);
-        failResult.setMessage("send weather msg fail");
-        failResult.setCode(StatusCode.ERROR);
-        return failResult;
+        return HttpClient.doPostJson(robotWebHookAddress, mapToStringMapper.writeValueAsString(sendWeatherMsgRequestBody)).toJSONString();
     }
 
     /**
@@ -158,27 +57,23 @@ public class FlyBookServiceImpl implements FlyBookService {
      * @return data
      */
     @Override
-    public Result getToken(String getTokenAddress, String robotAppId, String robotAppSecret, String tokenType) {
-        //从数据库获取tenantAccessToken
-        List<TableFlybookToken> token =
-                tableFlyTokenRepository.findTopByAppIdAndAppSecretOrderByCreateAtDesc(robotAppId, robotAppSecret);
-        //获取当前时间
+    public TableFlybookToken getToken(String getTokenAddress, String robotAppId, String robotAppSecret, String tokenType) throws Exception {
+
+        List<TableFlybookToken> tableFlyBookTokens =
+                tableFlyTokenRepository
+                        .findTopByAppIdAndAppSecretOrderByCreateAtDesc(robotAppId, robotAppSecret);
         LocalDateTime nowTime = LocalDateTime.now();
-        //如果没有token，则获取一个新的token保存到mysql并返回数据
-        if (token == null || token.isEmpty()) {
+
+        if (tableFlyBookTokens == null || tableFlyBookTokens.isEmpty())
             return doGetReqGetToken(getTokenAddress, robotAppId, robotAppSecret, tokenType);
-        }
-        //获取该token过期时间，有效期缩短15分钟，
-        LocalDateTime expireAgo = nowTime.minus(token.get(0).getTokenExpire() - 15 * 60, ChronoUnit.SECONDS);
-        //如果token已过期，则获取一个新的token保存到mysql并返回数据
-        if (token.get(0).getCreateAt().isBefore(expireAgo)) {
+
+        LocalDateTime expireAgo = nowTime.minus(tableFlyBookTokens.get(0).getTokenExpire() - 15 * 60, ChronoUnit.SECONDS);
+        if (tableFlyBookTokens.get(0).getCreateAt().isBefore(expireAgo))
             return doGetReqGetToken(getTokenAddress, robotAppId, robotAppSecret, tokenType);
-        }
-        //如果token没过期，则直接返回
-        Result<Object> returnGetTenantAccessTokenResult = new Result<>();
-        returnGetTenantAccessTokenResult.setData(token.get(0));
-        return returnGetTenantAccessTokenResult;
+
+        return tableFlyBookTokens.get(0);
     }
+
 
     /**
      * 发送get请求获取token并存到mysql中
@@ -189,141 +84,70 @@ public class FlyBookServiceImpl implements FlyBookService {
      * @param tokenType       获取的token类型
      * @return data
      */
-    public Result doGetReqGetToken(String getTokenAddress, String robotAppId, String robotAppSecret, String tokenType) {
-        try {
-            //创建请求体map信息，携带AppId与AppSecret
-            Map<String, String> sendPostRequestBodyMap = new HashMap();
-            sendPostRequestBodyMap.put("app_id", robotAppId);
-            sendPostRequestBodyMap.put("app_secret", robotAppSecret);
-            // 将 Map 转换为 JSON 字符串
-            ObjectMapper objectMapper = new ObjectMapper();
-            String json = objectMapper.writeValueAsString(sendPostRequestBodyMap);
-            //用Httpclient工具类发送POST请求
-            JSONObject getTenantAccessTokenResultResponseJson =
-                    HttpClient.doPostJson(getTokenAddress, json);
-            if (getTenantAccessTokenResultResponseJson.isEmpty()) {
-                //发送消息失败代码
-                Result<Object> failResult = new Result<>();
-                failResult.setFlag(false);
-                failResult.setMessage("get tenantAccessToken fail");
-                failResult.setCode(StatusCode.ERROR);
-                return failResult;
-            }
-            //把返回的json字符串转换为dto
-            GetTenantAccessTokenResDTO conversion =
-                    FastJSONObjectToDto.conversion(getTenantAccessTokenResultResponseJson, GetTenantAccessTokenResDTO.class);
-            //组装存入mysql中的数据
-            //TODO 需要加密与解密敏感数据
-            TableFlybookToken tableFlybookToken = new TableFlybookToken();
-            tableFlybookToken.setToken(conversion.getTenantAccessToken());
-            tableFlybookToken.setTokenExpire(conversion.getExpire());
-            tableFlybookToken.setTokenType(tokenType);
-            tableFlybookToken.setAppId(robotAppId);
-            tableFlybookToken.setAppSecret(robotAppSecret);
-            tableFlybookToken.setCreateAt(LocalDateTime.now());
-            tableFlyTokenRepository.save(tableFlybookToken);
+    private TableFlybookToken doGetReqGetToken(String getTokenAddress, String robotAppId,
+                                               String robotAppSecret, String tokenType) throws Exception {
 
-            //把token存入到返回结果
-            Result<Object> returnGetTenantAccessTokenResult = new Result<>();
-            returnGetTenantAccessTokenResult.setData(tableFlybookToken);
-            return returnGetTenantAccessTokenResult;
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        //发送消息失败代码
-        Result<Object> failResult = new Result<>();
-        failResult.setFlag(false);
-        failResult.setMessage("get tenantAccessToken fail");
-        failResult.setCode(StatusCode.ERROR);
-        return failResult;
+        ObjectMapper objectMapper = new ObjectMapper();
+        Map<String, String> sendPostRequestBodyMap = new HashMap();
+        sendPostRequestBodyMap.put("app_id", robotAppId);
+        sendPostRequestBodyMap.put("app_secret", robotAppSecret);
+        JSONObject getTenantAccessTokenResJson =
+                HttpClient.doPostJson(getTokenAddress,
+                        objectMapper.writeValueAsString(sendPostRequestBodyMap));
+
+        GetTenantAccessTokenResDTO getTenantAccessTokenRes =
+                FastJSONObjectToDto.conversion(getTenantAccessTokenResJson, GetTenantAccessTokenResDTO.class);
+        //TODO 需要加密与解密敏感数据
+        TableFlybookToken tableFlybookToken = new TableFlybookToken();
+        tableFlybookToken.setToken(getTenantAccessTokenRes.getTenantAccessToken());
+        tableFlybookToken.setTokenExpire(getTenantAccessTokenRes.getExpire());
+        tableFlybookToken.setTokenType(tokenType);
+        tableFlybookToken.setAppId(robotAppId);
+        tableFlybookToken.setAppSecret(robotAppSecret);
+        tableFlybookToken.setCreateAt(LocalDateTime.now());
+        tableFlyTokenRepository.save(tableFlybookToken);
+
+        return tableFlybookToken;
     }
 
     /**
-     * 发送查询地址的未来天气预报并@查询人
+     * 发送查询后的天气消息到查询人
      *
-     * @param sendMsgUrl        发送消息地址
-     * @param tenantAccessToken
-     * @param openId            查询人的OpenId
-     * @param weatherCode       天气类型代码
-     * @param weatherDto        天气预报信息
+     * @param robotAppId         发送消息的机器人AppId
+     * @param robotAppSecret     发送消息的机器人AppSecret
+     * @param openId             消息接收人的openId
+     * @param flyBookWeatherCode 发送消息类型代码
+     * @param weatherDto         天气数据dto
      * @return
+     * @throws Exception
      */
     @Override
-    public Result sendWeatherMsgToOpenId(String sendMsgUrl,
-                                         String weatherCode,
-                                         String tenantAccessToken,
+    public Result sendWeatherMsgToOpenId(String robotAppId,
+                                         String robotAppSecret,
                                          String openId,
-                                         Object weatherDto) throws Exception {
-
-        //创建飞书API Client
-        Client feishuClient = Client.newBuilder(robotAppId, robotAppSecret).build();
-        //创建请求体
+                                         String flyBookWeatherCode,
+                                         String sendMsgType,
+                                         WeatherDTO weatherDto) throws Exception {
+        ObjectMapper mapToStringMapper = new ObjectMapper();
+        HashMap<String, String> messageContentMap = new HashMap<>();
         CreateMessageReqBody createMessageReqBody = new CreateMessageReqBody();
+
+        Client feishuClient = Client.newBuilder(robotAppId, robotAppSecret).build();
         createMessageReqBody.setReceiveId(openId);
-        //TODO 优化消息类型 https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/im-v1/message/create 到pojo里
-        createMessageReqBody.setMsgType("text");
-        System.out.println("组装好的请求体： " + createMessageReqBody.toString());
-        //如果是请求发送实时天气消息
-        if (GaodeConfig.GET_LIVE_WEATHER_CODE.equals(weatherCode)) {
-            //创建消息文本
-            HashMap<String, String> liveMessageContentMap = new HashMap<>();
-            liveMessageContentMap.put("text", WeatherDtoToMsg.conversionSearchLiveWeatherDtoToMsg((LiveWeatherDTO) weatherDto));
-            //转换为json字符串
-            ObjectMapper objectMapper = new ObjectMapper();
-            String jsonString = objectMapper.writeValueAsString(liveMessageContentMap);
-            System.out.println(jsonString.toString());
-            createMessageReqBody.setContent(jsonString);
-            //发起请求
-            CreateMessageResp resp = feishuClient.im().message()
-                    .create(CreateMessageReq.newBuilder()
-                            .receiveIdType("open_id")
-                            .createMessageReqBody(createMessageReqBody)
-                            .build());
-            System.out.println("响应消息" + resp.toString());
-            // 处理服务端错误
-            if (!resp.success()) {
-                System.out.println(String.format("code:%s,msg:%s,reqId:%s"
-                        , resp.getCode(), resp.getMsg(), resp.getRequestId()));
-                Result failResult = new Result();
-                failResult.setCode(StatusCode.ERROR);
-                failResult.setMessage(String.format("code:%s,msg:%s,reqId:%s"
-                        , resp.getCode(), resp.getMsg(), resp.getRequestId()));
-                failResult.setData(resp.toString());
-                return failResult;
-            }
-            Result successResult = new Result();
-            successResult.setData(resp);
-            return successResult;
-        }
-        //创建消息文本
-        HashMap<String, String> forecastMessageContentMap = new HashMap<>();
-        forecastMessageContentMap.put("text", WeatherDtoToMsg.conversionSearchForecastWeatherDtoToMsg((ForecastWeatherDTO) weatherDto));
-        //转换为json字符串
-        ObjectMapper objectMapper = new ObjectMapper();
-        String jsonString = objectMapper.writeValueAsString(forecastMessageContentMap);
-        System.out.println(jsonString.toString());
-        createMessageReqBody.setContent(jsonString);
-        //发起请求
+        createMessageReqBody.setMsgType(sendMsgType);
+        messageContentMap.put(sendMsgType, WeatherDtoToMsg.conversionWeatherDtoToMsg(weatherDto, flyBookWeatherCode));
+        createMessageReqBody.setContent(mapToStringMapper.writeValueAsString(messageContentMap));
+
         CreateMessageResp resp = feishuClient.im().message()
                 .create(CreateMessageReq.newBuilder()
                         .receiveIdType("open_id")
                         .createMessageReqBody(createMessageReqBody)
                         .build());
-        System.out.println("响应消息" + resp.toString());
 
-        // 处理服务端错误
         if (!resp.success()) {
-            System.out.println(String.format("code:%s,msg:%s,reqId:%s"
-                    , resp.getCode(), resp.getMsg(), resp.getRequestId()));
-            Result failResult = new Result();
-            failResult.setCode(StatusCode.ERROR);
-            failResult.setMessage(String.format("code:%s,msg:%s,reqId:%s"
-                    , resp.getCode(), resp.getMsg(), resp.getRequestId()));
-            failResult.setData(resp.toString());
-            return failResult;
+            System.out.printf("code:%s,msg:%s,reqId:%s%n"
+                    , resp.getCode(), resp.getMsg(), resp.getRequestId());
         }
-        Result successResult = new Result();
-        successResult.setData(resp);
-        return successResult;
+        return null;
     }
 }

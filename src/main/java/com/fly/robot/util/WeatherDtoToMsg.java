@@ -1,116 +1,112 @@
 package com.fly.robot.util;
 
-import com.fly.robot.pojo.ForecastWeatherDTO;
-import com.fly.robot.pojo.LiveWeatherDTO;
+import com.fly.robot.entity.FlyBookConfig;
 
-import java.util.List;
+import com.fly.robot.pojo.WeatherDTO;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 
 //把天气dto转化成消息信息
 //TODO 代码有点冗余未来优化
 public class WeatherDtoToMsg {
+    public static String conversionWeatherDtoToMsg(WeatherDTO weatherDTO, String sendMsgCode) {
 
-    /**
-     * 发送默认城市天气预报返回的天气消息
-     *
-     * @param forecastWeatherDto 预报天气dto
-     * @return 组装好的天气消息
-     */
-    public static String conversionForecastWeatherDtoToMsg(ForecastWeatherDTO forecastWeatherDto) {
+        if (FlyBookConfig.SEND_LIVE_WEATHER_MSG_CODE.equals(sendMsgCode)) {
+            WeatherDTO.Live liveWeatherInfo = weatherDTO.getLives().get(0);
+            String weatherReportTime =
+                    LocalDateTime.parse(weatherDTO.getLives().get(0).getReporttime(),
+                                    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+                            .format(DateTimeFormatter.ofPattern("yyyy年M月d日H时m分"));
+            return "自动发送实时天气默认的城市为：" + liveWeatherInfo.getCity() + "，当前天气：" + liveWeatherInfo.getWeather() +
+                    "，实时气温为" + liveWeatherInfo.getTemperature() + "摄氏度，空气湿度为" + liveWeatherInfo.getHumidity() +
+                    "%，" + liveWeatherInfo.getWinddirection() + "风" + liveWeatherInfo.getWindpower() + "级。更新时间为" + weatherReportTime + "。";
+        }
 
-        //格式化天气预报更新时间
-        String time = forecastWeatherDto.getForecasts().get(0).getReporttime().substring(0, 4) + "年" + forecastWeatherDto.getForecasts().get(0).getReporttime().substring(5, 7) + "月" + forecastWeatherDto.getForecasts().get(0).getReporttime().substring(8, 10) + "日" +
-                forecastWeatherDto.getForecasts().get(0).getReporttime().substring(11, 13) + "时" + forecastWeatherDto.getForecasts().get(0).getReporttime().substring(14, 16) + "分";
-        List<ForecastWeatherDTO.CityForecast.WeatherForecast> weatherCasts = forecastWeatherDto.getForecasts().get(0).getCasts();
-        //拼接天气预报消息
-        String forecastWeatherMsg =
-                "自动发送天气预报默认的城市为：" + forecastWeatherDto.getForecasts().get(0).getCity() + "。此天气预报更新时间为" + time + "。下面是详细的天气情况:" +
-                        weatherCasts.get(0).getDate().substring(0, 4) + "年" + weatherCasts.get(0).getDate().substring(5, 7) + "月" + weatherCasts.get(0).getDate().substring(8, 10) + "日" +
-                        "的白天天气情况为" + weatherCasts.get(0).getDayweather() + "，室外气温为" + weatherCasts.get(0).getDaytemp() + "摄氏度，风向为" +
-                        weatherCasts.get(0).getDaywind() + "风，风力" + weatherCasts.get(0).getDaypower() + "级。夜间天气为" + weatherCasts.get(0).getNightweather() + "，室外气温" +
-                        weatherCasts.get(0).getNighttemp() + "摄氏度，风向为" + weatherCasts.get(0).getNightwind() + "风，风力" + weatherCasts.get(0).getNightpower() + "级。" +
-                        weatherCasts.get(1).getDate().substring(0, 4) + "年" + weatherCasts.get(1).getDate().substring(5, 7) + "月" + weatherCasts.get(1).getDate().substring(8, 10) + "日" +
-                        "的白天天气情况为" + weatherCasts.get(1).getDayweather() + "，室外气温为" + weatherCasts.get(1).getDaytemp() + "摄氏度，风向为" +
-                        weatherCasts.get(1).getDaywind() + "风，风力" + weatherCasts.get(1).getDaypower() + "级。夜间天气为" + weatherCasts.get(1).getNightweather() + "，室外气温" +
-                        weatherCasts.get(1).getNighttemp() + "摄氏度，风向为" + weatherCasts.get(1).getNightwind() + "风，风力" + weatherCasts.get(1).getNightpower() + "级。" +
-                        weatherCasts.get(2).getDate().substring(0, 4) + "年" + weatherCasts.get(2).getDate().substring(5, 7) + "月" + weatherCasts.get(2).getDate().substring(8, 10) + "日" +
-                        "的白天天气情况为" + weatherCasts.get(2).getDayweather() + "，室外气温为" + weatherCasts.get(2).getDaytemp() + "摄氏度，风向为" +
-                        weatherCasts.get(2).getDaywind() + "风，风力" + weatherCasts.get(2).getDaypower() + "级。夜间天气为" + weatherCasts.get(2).getNightweather() + "，室外气温" +
-                        weatherCasts.get(2).getNighttemp() + "摄氏度，风向为" + weatherCasts.get(2).getNightwind() + "风，风力" + weatherCasts.get(2).getNightpower() + "级。" +
-                        weatherCasts.get(3).getDate().substring(0, 4) + "年" + weatherCasts.get(3).getDate().substring(5, 7) + "月" + weatherCasts.get(3).getDate().substring(8, 10) + "日" +
-                        "的白天天气情况为" + weatherCasts.get(3).getDayweather() + "，室外气温为" + weatherCasts.get(3).getDaytemp() + "摄氏度，风向为" +
-                        weatherCasts.get(3).getDaywind() + "风，风力" + weatherCasts.get(3).getDaypower() + "级。夜间天气为" + weatherCasts.get(3).getNightweather() + "，室外气温" +
-                        weatherCasts.get(3).getNighttemp() + "摄氏度，风向为" + weatherCasts.get(3).getNightwind() + "风，风力" + weatherCasts.get(3).getNightpower() + "级。";
-        return forecastWeatherMsg;
-    }
+        if (FlyBookConfig.SEARCH_LIVE_WEATHER_MSG_CODE.equals(sendMsgCode)) {
+            WeatherDTO.Live liveWeatherInfo = weatherDTO.getLives().get(0);
+            String weatherReportTime =
+                    LocalDateTime.parse(weatherDTO.getLives().get(0).getReporttime(),
+                                    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+                            .format(DateTimeFormatter.ofPattern("yyyy年M月d日H时m分"));
+            return "您所查询的城市为：" + liveWeatherInfo.getCity() + "，当前天气：" + liveWeatherInfo.getWeather() +
+                    "，实时气温为" + liveWeatherInfo.getTemperature() + "摄氏度，空气湿度为" + liveWeatherInfo.getHumidity() +
+                    "%，" + liveWeatherInfo.getWinddirection() + "风" + liveWeatherInfo.getWindpower() + "级。更新时间为" + weatherReportTime + "。";
+        }
 
-    /**
-     * 查询未来天气返回的天气消息
-     *
-     * @param forecastWeatherDto 未来天气预报dto
-     * @return 组装好的天气消息
-     */
-    public static String conversionSearchForecastWeatherDtoToMsg(ForecastWeatherDTO forecastWeatherDto) {
+        if (FlyBookConfig.SEND_FORECAST_WEATHER_MSG_CODE.equals(sendMsgCode)) {
+            ArrayList<WeatherDTO.Forecast.Cast> forecastWeatherCasts = weatherDTO.getForecasts().get(0).getCasts();
+            String weatherReportTime =
+                    LocalDateTime.parse(weatherDTO.getForecasts().get(0).getReporttime(),
+                                    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+                            .format(DateTimeFormatter.ofPattern("yyyy年M月d日H时m分"));
+            StringBuilder forecastWeatherMsg =
+                    new StringBuilder("自动发送天气预报默认的城市为：")
+                            .append(weatherDTO.getForecasts().get(0).getCity())
+                            .append("。此天气预报更新时间为")
+                            .append(weatherReportTime)
+                            .append("。下面是详细的天气情况:");
+            for (WeatherDTO.Forecast.Cast cast : forecastWeatherCasts) {
+                forecastWeatherMsg.append(LocalDate.parse(cast.getDate()).format(DateTimeFormatter.ofPattern("yyyy年M月d日")))
+                        .append("的白天天气情况为")
+                        .append(cast.getDayweather())
+                        .append("，室外气温为")
+                        .append(cast.getDaytemp())
+                        .append("摄氏度，风向为")
+                        .append(cast.getDaywind())
+                        .append("风，风力")
+                        .append(cast.getDaypower())
+                        .append("级。夜间天气为")
+                        .append(cast.getNightweather())
+                        .append("，室外气温")
+                        .append(cast.getNighttemp())
+                        .append("摄氏度，风向为")
+                        .append(cast.getNightwind())
+                        .append("风，风力")
+                        .append(cast.getNightpower())
+                        .append("级。");
+            }
+            return forecastWeatherMsg.toString();
+        }
 
-        //格式化天气预报更新时间
-        String time = forecastWeatherDto.getForecasts().get(0).getReporttime().substring(0, 4) + "年" + forecastWeatherDto.getForecasts().get(0).getReporttime().substring(5, 7) + "月" + forecastWeatherDto.getForecasts().get(0).getReporttime().substring(8, 10) + "日" +
-                forecastWeatherDto.getForecasts().get(0).getReporttime().substring(11, 13) + "时" + forecastWeatherDto.getForecasts().get(0).getReporttime().substring(14, 16) + "分";
-        List<ForecastWeatherDTO.CityForecast.WeatherForecast> weatherCasts = forecastWeatherDto.getForecasts().get(0).getCasts();
-        //拼接天气预报消息
-        String forecastWeatherMsg =
-                "您查询的城市为：" + forecastWeatherDto.getForecasts().get(0).getCity() + "。此天气预报更新时间为" + time + "。下面是详细的天气情况:" +
-                        weatherCasts.get(0).getDate().substring(0, 4) + "年" + weatherCasts.get(0).getDate().substring(5, 7) + "月" + weatherCasts.get(0).getDate().substring(8, 10) + "日" +
-                        "的白天天气情况为" + weatherCasts.get(0).getDayweather() + "，室外气温为" + weatherCasts.get(0).getDaytemp() + "摄氏度，风向为" +
-                        weatherCasts.get(0).getDaywind() + "风，风力" + weatherCasts.get(0).getDaypower() + "级。夜间天气为" + weatherCasts.get(0).getNightweather() + "，室外气温" +
-                        weatherCasts.get(0).getNighttemp() + "摄氏度，风向为" + weatherCasts.get(0).getNightwind() + "风，风力" + weatherCasts.get(0).getNightpower() + "级。" +
-                        weatherCasts.get(1).getDate().substring(0, 4) + "年" + weatherCasts.get(1).getDate().substring(5, 7) + "月" + weatherCasts.get(1).getDate().substring(8, 10) + "日" +
-                        "的白天天气情况为" + weatherCasts.get(1).getDayweather() + "，室外气温为" + weatherCasts.get(1).getDaytemp() + "摄氏度，风向为" +
-                        weatherCasts.get(1).getDaywind() + "风，风力" + weatherCasts.get(1).getDaypower() + "级。夜间天气为" + weatherCasts.get(1).getNightweather() + "，室外气温" +
-                        weatherCasts.get(1).getNighttemp() + "摄氏度，风向为" + weatherCasts.get(1).getNightwind() + "风，风力" + weatherCasts.get(1).getNightpower() + "级。" +
-                        weatherCasts.get(2).getDate().substring(0, 4) + "年" + weatherCasts.get(2).getDate().substring(5, 7) + "月" + weatherCasts.get(2).getDate().substring(8, 10) + "日" +
-                        "的白天天气情况为" + weatherCasts.get(2).getDayweather() + "，室外气温为" + weatherCasts.get(2).getDaytemp() + "摄氏度，风向为" +
-                        weatherCasts.get(2).getDaywind() + "风，风力" + weatherCasts.get(2).getDaypower() + "级。夜间天气为" + weatherCasts.get(2).getNightweather() + "，室外气温" +
-                        weatherCasts.get(2).getNighttemp() + "摄氏度，风向为" + weatherCasts.get(2).getNightwind() + "风，风力" + weatherCasts.get(2).getNightpower() + "级。" +
-                        weatherCasts.get(3).getDate().substring(0, 4) + "年" + weatherCasts.get(3).getDate().substring(5, 7) + "月" + weatherCasts.get(3).getDate().substring(8, 10) + "日" +
-                        "的白天天气情况为" + weatherCasts.get(3).getDayweather() + "，室外气温为" + weatherCasts.get(3).getDaytemp() + "摄氏度，风向为" +
-                        weatherCasts.get(3).getDaywind() + "风，风力" + weatherCasts.get(3).getDaypower() + "级。夜间天气为" + weatherCasts.get(3).getNightweather() + "，室外气温" +
-                        weatherCasts.get(3).getNighttemp() + "摄氏度，风向为" + weatherCasts.get(3).getNightwind() + "风，风力" + weatherCasts.get(3).getNightpower() + "级。";
-        return forecastWeatherMsg;
-    }
+        if (FlyBookConfig.SEARCH_FORECAST_WEATHER_MSG_CODE.equals(sendMsgCode)) {
+            ArrayList<WeatherDTO.Forecast.Cast> forecastWeatherCasts = weatherDTO.getForecasts().get(0).getCasts();
+            String weatherReportTime =
+                    LocalDateTime.parse(weatherDTO.getForecasts().get(0).getReporttime(),
+                                    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+                            .format(DateTimeFormatter.ofPattern("yyyy年M月d日H时m分"));
+            StringBuilder searchForecastWeatherMsg =
+                    new StringBuilder("您所查询的城市为：")
+                            .append(weatherDTO.getForecasts().get(0).getCity())
+                            .append("。此天气预报更新时间为")
+                            .append(weatherReportTime)
+                            .append("。下面是详细的天气情况:");
+            for (WeatherDTO.Forecast.Cast cast : forecastWeatherCasts) {
+                searchForecastWeatherMsg.append(LocalDate.parse(cast.getDate()).format(DateTimeFormatter.ofPattern("yyyy年M月d日")))
+                        .append("的白天天气情况为")
+                        .append(cast.getDayweather())
+                        .append("，室外气温为")
+                        .append(cast.getDaytemp())
+                        .append("摄氏度，风向为")
+                        .append(cast.getDaywind())
+                        .append("风，风力")
+                        .append(cast.getDaypower())
+                        .append("级。夜间天气为")
+                        .append(cast.getNightweather())
+                        .append("，室外气温")
+                        .append(cast.getNighttemp())
+                        .append("摄氏度，风向为")
+                        .append(cast.getNightwind())
+                        .append("风，风力")
+                        .append(cast.getNightpower())
+                        .append("级。");
 
-    /**
-     * 发送默认城市实时天气返回的天气消息
-     *
-     * @param liveWeatherDto 实时天气预报dto
-     * @return 组装好的天气消息
-     */
-    public static String conversionLiveWeatherDtoToMsg(LiveWeatherDTO liveWeatherDto) {
-
-        //时间截取转换格式
-        String time = liveWeatherDto.getLives().get(0).getReporttime().substring(0, 4) + "年" + liveWeatherDto.getLives().get(0).getReporttime().substring(5, 7) + "月" + liveWeatherDto.getLives().get(0).getReporttime().substring(8, 10) + "日" + liveWeatherDto.getLives().get(0).getReporttime().substring(11, 13) +
-                "时" + liveWeatherDto.getLives().get(0).getReporttime().substring(14, 16) + "分";
-
-        //拼接天气消息
-        String liveWeatherMsg = "自动发送实时天气默认的城市为：" + liveWeatherDto.getLives().get(0).getCity() + "，当前天气：" + liveWeatherDto.getLives().get(0).getWeather() + "，实时气温为" + liveWeatherDto.getLives().get(0).getTemperature() + "摄氏度，空气湿度为" +
-                liveWeatherDto.getLives().get(0).getHumidity() + "%，" + liveWeatherDto.getLives().get(0).getWinddirection() + "风" + liveWeatherDto.getLives().get(0).getWindpower() + "级。更新时间为" + time + "。";
-        return liveWeatherMsg;
-    }
-
-    /**
-     * 查询实时天气返回的天气消息
-     *
-     * @param liveWeatherDto 实时天气DTO
-     * @return 组装好的天气消息
-     */
-    public static String conversionSearchLiveWeatherDtoToMsg(LiveWeatherDTO liveWeatherDto) {
-
-        //时间截取转换格式
-        String time = liveWeatherDto.getLives().get(0).getReporttime().substring(0, 4) + "年" + liveWeatherDto.getLives().get(0).getReporttime().substring(5, 7) + "月" + liveWeatherDto.getLives().get(0).getReporttime().substring(8, 10) + "日" + liveWeatherDto.getLives().get(0).getReporttime().substring(11, 13) +
-                "时" + liveWeatherDto.getLives().get(0).getReporttime().substring(14, 16) + "分";
-
-        //拼接天气消息
-        String liveWeatherMsg = "您所查询的城市为：" + liveWeatherDto.getLives().get(0).getCity() + "，当前天气：" + liveWeatherDto.getLives().get(0).getWeather() + "，实时气温为" + liveWeatherDto.getLives().get(0).getTemperature() + "摄氏度，空气湿度为" +
-                liveWeatherDto.getLives().get(0).getHumidity() + "%，" + liveWeatherDto.getLives().get(0).getWinddirection() + "风" + liveWeatherDto.getLives().get(0).getWindpower() + "级。更新时间为" + time + "。";
-        return liveWeatherMsg;
+            }
+            return searchForecastWeatherMsg.toString();
+        }
+        return null;
     }
 
 }

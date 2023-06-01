@@ -1,13 +1,15 @@
 package com.fly.robot.pojo;
 
-import java.util.List;
-//这是从高德API获取到的天气预报数据DTO
-public class ForecastWeatherDTO {
+import java.util.ArrayList;
+
+//天气DTO
+public class WeatherDTO {
     private String status;//返回状态
     private String count;//返回结果总目数
     private String info;//返回的状态信息
     private String infocode;//返回状态说明，10000 代表正确
-    private List<CityForecast> forecasts;//预报天气信息数据
+    private ArrayList<Forecast> forecasts;//预报天气信息数据
+    private ArrayList<Live> lives;//实况天气数据信息
 
     public String getStatus() {
         return status;
@@ -41,20 +43,29 @@ public class ForecastWeatherDTO {
         this.infocode = infocode;
     }
 
-    public List<CityForecast> getForecasts() {
+    public ArrayList<Live> getLives() {
+        return lives;
+    }
+
+    public void setLives(ArrayList<Live> lives) {
+        this.lives = lives;
+    }
+
+    public ArrayList<Forecast> getForecasts() {
         return forecasts;
     }
 
-    public void setForecasts(List<CityForecast> forecasts) {
+    public void setForecasts(ArrayList<Forecast> forecasts) {
         this.forecasts = forecasts;
     }
-    //预报天气信息数据
-    public static class CityForecast {
+
+    public static class Forecast {
         private String city;//城市名称
         private String adcode;//城市编码
         private String province;//省份名称
         private String reporttime;//预报发布时间
-        private List<WeatherForecast> casts;//预报数据list结构，元素cast，按顺序为当天、第二天、第三天的预报数据
+        private ArrayList<Cast> casts;//预报数据天气数据信息，按顺序为当天、第二天、第三天的预报数据
+
 
         public String getCity() {
             return city;
@@ -88,28 +99,27 @@ public class ForecastWeatherDTO {
             this.reporttime = reporttime;
         }
 
-        public List<WeatherForecast> getCasts() {
+        public ArrayList<Cast> getCasts() {
             return casts;
         }
 
-        public void setCasts(List<WeatherForecast> casts) {
+        public void setCasts(ArrayList<Cast> casts) {
             this.casts = casts;
         }
 
-        //具体预报天气数据
-        public static class WeatherForecast {
-            private String date;//日期
-            private String week;//星期几
-            private String dayweather;//白天天气现象
-            private String nightweather;//晚上天气现象
-            private String daytemp;//白天温度
-            private String nighttemp;//晚上温度
-            private String daywind;//白天风向
-            private String nightwind;//晚上风向
-            private String daypower;//白天风力
-            private String nightpower;//晚上风力
-            private String daytemp_float;
-            private String nighttemp_float;
+        public static class Cast {
+            private String date;
+            private String week;
+            private String dayweather;
+            private String nightweather;
+            private String daytemp;
+            private String nighttemp;
+            private String daywind;
+            private String nightwind;
+            private String daypower;
+            private String nightpower;
+            private float daytemp_float;
+            private float nighttemp_float;
 
             public String getDate() {
                 return date;
@@ -191,66 +201,127 @@ public class ForecastWeatherDTO {
                 this.nightpower = nightpower;
             }
 
-            public String getDaytemp_float() {
+            public float getDaytemp_float() {
                 return daytemp_float;
             }
 
-            public void setDaytemp_float(String daytemp_float) {
+            public void setDaytemp_float(float daytemp_float) {
                 this.daytemp_float = daytemp_float;
             }
 
-            public String getNighttemp_float() {
+            public float getNighttemp_float() {
                 return nighttemp_float;
             }
 
-            public void setNighttemp_float(String nighttemp_float) {
+            public void setNighttemp_float(float nighttemp_float) {
                 this.nighttemp_float = nighttemp_float;
             }
-
-            // Getters and setters
-
-            @Override
-            public String toString() {
-                return "WeatherForecast{" +
-                        "date='" + date + '\'' +
-                        ", week='" + week + '\'' +
-                        ", dayweather='" + dayweather + '\'' +
-                        ", nightweather='" + nightweather + '\'' +
-                        ", daytemp='" + daytemp + '\'' +
-                        ", nighttemp='" + nighttemp + '\'' +
-                        ", daywind='" + daywind + '\'' +
-                        ", nightwind='" + nightwind + '\'' +
-                        ", daypower='" + daypower + '\'' +
-                        ", nightpower='" + nightpower + '\'' +
-                        ", daytemp_float='" + daytemp_float + '\'' +
-                        ", nighttemp_float='" + nighttemp_float + '\'' +
-                        '}';
-            }
         }
 
-        // Getters and setters
+    }
 
-        @Override
-        public String toString() {
-            return "CityForecast{" +
-                    "city='" + city + '\'' +
-                    ", adcode='" + adcode + '\'' +
-                    ", province='" + province + '\'' +
-                    ", reporttime='" + reporttime + '\'' +
-                    ", casts=" + casts +
-                    '}';
+    public static class Live {
+        private String province;//省份名
+        private String city;//城市名
+        private String adcode;//区域编码
+        private String weather;//天气现象（汉字描述）
+        private String temperature;//实时气温，单位：摄氏度
+        private String winddirection;//风向描述
+        private String windpower;//风力级别，单位：级
+        private String humidity;//空气湿度
+        private String reporttime;//数据发布的时间
+        private float temperature_float;
+        private float humidity_float;
+
+        public String getProvince() {
+            return province;
         }
+
+        public void setProvince(String province) {
+            this.province = province;
+        }
+
+        public String getCity() {
+            return city;
+        }
+
+        public void setCity(String city) {
+            this.city = city;
+        }
+
+        public String getAdcode() {
+            return adcode;
+        }
+
+        public void setAdcode(String adcode) {
+            this.adcode = adcode;
+        }
+
+        public String getWeather() {
+            return weather;
+        }
+
+        public void setWeather(String weather) {
+            this.weather = weather;
+        }
+
+        public String getTemperature() {
+            return temperature;
+        }
+
+        public void setTemperature(String temperature) {
+            this.temperature = temperature;
+        }
+
+        public String getWinddirection() {
+            return winddirection;
+        }
+
+        public void setWinddirection(String winddirection) {
+            this.winddirection = winddirection;
+        }
+
+        public String getWindpower() {
+            return windpower;
+        }
+
+        public void setWindpower(String windpower) {
+            this.windpower = windpower;
+        }
+
+        public String getHumidity() {
+            return humidity;
+        }
+
+        public void setHumidity(String humidity) {
+            this.humidity = humidity;
+        }
+
+        public String getReporttime() {
+            return reporttime;
+        }
+
+        public void setReporttime(String reporttime) {
+            this.reporttime = reporttime;
+        }
+
+        public float getTemperature_float() {
+            return temperature_float;
+        }
+
+        public void setTemperature_float(float temperature_float) {
+            this.temperature_float = temperature_float;
+        }
+
+        public float getHumidity_float() {
+            return humidity_float;
+        }
+
+        public void setHumidity_float(float humidity_float) {
+            this.humidity_float = humidity_float;
+        }
+
     }
 
-    @Override
-    public String toString() {
-        return "ForecastWeatherDTONew{" +
-                "status='" + status + '\'' +
-                ", count='" + count + '\'' +
-                ", info='" + info + '\'' +
-                ", infocode='" + infocode + '\'' +
-                ", forecasts=" + forecasts +
-                '}';
-    }
 }
 

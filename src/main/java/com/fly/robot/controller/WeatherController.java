@@ -3,11 +3,7 @@ package com.fly.robot.controller;
 import com.fly.robot.dao.TableForecastWeatherRepository;
 import com.fly.robot.dao.TableLiveWeatherRepository;
 import com.fly.robot.entity.GaodeConfig;
-import com.fly.robot.entity.Result;
-import com.fly.robot.pojo.TableAddressAdcode;
-import com.fly.robot.pojo.TableForecastWeather;
-import com.fly.robot.pojo.TableLiveWeather;
-import com.fly.robot.pojo.GetAddressInfoFromGaodeDTO;
+import com.fly.robot.pojo.*;
 import com.fly.robot.service.WeatherService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -44,7 +40,7 @@ public class WeatherController {
     //也可以手动获取实时天气
     @Scheduled(cron = "0 30 8,9,10,11,12,13,14,15,16,17,18,19,20,21 * * ? ")
     @GetMapping("/findLiveWeatherSaveToMysql")
-    public Result findLiveWeatherSaveToMysql() {
+    public WeatherDTO findLiveWeatherSaveToMysql() throws Exception {
         return weatherService.getWeather(webApiKey, GaodeConfig.BEIJING_CITY_ADCODE, GaodeConfig.GET_LIVE_WEATHER_CODE);
     }
 
@@ -53,10 +49,8 @@ public class WeatherController {
     //也可以手动获取天气预报
     @Scheduled(cron = "0 0 9,10,12,13,19,20 * * ? ")
     @GetMapping("/findForecastWeatherToMysql")
-    public Result findForecastWeatherToMysql() {
-
+    public WeatherDTO findForecastWeatherToMysql() throws Exception {
         return weatherService.getWeather(webApiKey, GaodeConfig.BEIJING_CITY_ADCODE, GaodeConfig.GET_FORECAST_WEATHER_CODE);
-
     }
 
     /**
@@ -64,10 +58,8 @@ public class WeatherController {
      * @return 天气JSON
      */
     @GetMapping("/findLiveWeather")
-    public Result findLiveWeather() {
-
+    public WeatherDTO findLiveWeather() throws Exception {
         return weatherService.getWeather(webApiKey, GaodeConfig.BEIJING_CITY_ADCODE, GaodeConfig.GET_LIVE_WEATHER_CODE);
-
     }
 
     /**
@@ -75,46 +67,37 @@ public class WeatherController {
      * @return 天气JSON
      */
     @GetMapping("/findForecastWeather")
-    public Result findForecastWeather() {
-
+    public WeatherDTO findForecastWeather() throws Exception {
         return weatherService.getWeather(webApiKey, GaodeConfig.BEIJING_CITY_ADCODE, GaodeConfig.GET_FORECAST_WEATHER_CODE);
-
     }
 
     //查找所有在mysql中的实时天气数据
     @GetMapping("/getAllLiveWeatherFromMysql")
-    public Result getAllLiveWeatherFromMysql() {
-
-        List<TableLiveWeather> allLiveWeatherFromMysql = liveWeatherRepository.findAll();
-        Result<Object> getAllLiveWeatherResult = new Result<>();
-        getAllLiveWeatherResult.setData(allLiveWeatherFromMysql);
-
-        return getAllLiveWeatherResult;
+    public List<TableLiveWeather> getAllLiveWeatherFromMysql() {
+        return liveWeatherRepository.findAll();
     }
 
     //查找所有在mysql中的天气预报数据
     @GetMapping("/getAllForecastWeatherFormMysql")
-    public Result getAllForecastWeatherFormMysql() {
-        List<TableForecastWeather> allForecastWeatherFromMysql = forecastWeatherRepository.findAll();
-        Result<Object> getAllForecastWeatherResult = new Result<>();
-        getAllForecastWeatherResult.setData(allForecastWeatherFromMysql);
-        return getAllForecastWeatherResult;
+    public List<TableForecastWeather> getAllForecastWeatherFormMysql() {
+        return forecastWeatherRepository.findAll();
     }
 
     //查找具体地址信息
     @GetMapping("/getAddressInfoForMsg")
-    public Result getAddressInfoForMsg(@RequestParam("address") String findAddressInfoMsg){
+    public TableAddressAdcode getAddressInfoForMsg(@RequestParam("address") String findAddressInfoMsg) throws Exception {
         return weatherService.findAddressInfoByMsg(GaodeConfig.GET_ADDRESS_ADCODE_URL, webApiKey, findAddressInfoMsg);
     }
 
-    //获取任意地址的天气预报数据
+    /**
+     * @param findAddressInfoMsg 需查询的地址消息
+     * @return
+     * @throws Exception
+     */
     @GetMapping("/getForecastWeatherForAddress")
-    public Result getForecastWeatherForAddress(@RequestParam("address") String findAddressInfoMsg){
-        //获取任意地址的具体adcode
-        Result addressInfoByMsg = weatherService.findAddressInfoByMsg(GaodeConfig.GET_ADDRESS_ADCODE_URL, webApiKey, findAddressInfoMsg);
-        TableAddressAdcode tableAddressAdcode = (TableAddressAdcode)addressInfoByMsg.getData();
-        //从高德获取具体的天气预报
-        return weatherService.getWeather(webApiKey, tableAddressAdcode.getAdcode(), GaodeConfig.GET_FORECAST_WEATHER_CODE);
+    public WeatherDTO getForecastWeatherForAddress(@RequestParam("address") String findAddressInfoMsg) throws Exception{
+        TableAddressAdcode addressInfoByMsg = weatherService.findAddressInfoByMsg(GaodeConfig.GET_ADDRESS_ADCODE_URL, webApiKey, findAddressInfoMsg);
+        return weatherService.getWeather(webApiKey, addressInfoByMsg.getAdcode(), GaodeConfig.GET_FORECAST_WEATHER_CODE);
         //TODO 在redis添加过期码，adcode、对应的城市名称、过期时间，人工查询天气先到redis或者mysql中查询，过期再查询新的天气情况。(可以优化加入es)
         //TODO 查询流程，人工查询天气，启动服务器先把mysql中的adcode缓存到redis，查询时候先从redis获取adcode代码，
         //TODO redis没有就去高德查询，查询结果缓存到mysql与redis中
