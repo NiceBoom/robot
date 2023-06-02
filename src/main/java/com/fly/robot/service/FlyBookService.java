@@ -1,13 +1,14 @@
 package com.fly.robot.service;
 
-import com.fly.robot.entity.Result;
-import com.fly.robot.pojo.TableFlybookToken;
-import com.fly.robot.pojo.WeatherDTO;
+import com.fly.robot.pojo.Result;
+import com.fly.robot.entity.TableFlybookToken;
+import com.fly.robot.entity.WeatherDTO;
 
 public interface FlyBookService {
 
     /**
      * get flybook token
+     *
      * @param getTokenAddress
      * @param robotAppId
      * @param robotAppSecret
@@ -18,6 +19,7 @@ public interface FlyBookService {
 
     /**
      * 发送天气消息到查询人
+     *
      * @param robotAppId         发送消息的机器人AppId
      * @param robotAppSecret     发送消息的机器人AppSecret
      * @param openId             消息接收人的openId
@@ -31,6 +33,7 @@ public interface FlyBookService {
 
     /**
      * 发送天气消息到群聊中
+     *
      * @param robotWebHookAddress 群聊机器人发送消息 webhook地址
      * @param flyBookWeatherCode  天气类型代码
      * @param weatherDTO          天气数据

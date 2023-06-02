@@ -3,8 +3,10 @@ package com.fly.robot.service.impl;
 import com.alibaba.fastjson.JSONObject;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fly.robot.dao.TableFlyTokenRepository;
-import com.fly.robot.pojo.*;
-import com.fly.robot.entity.Result;
+import com.fly.robot.entity.GetTenantAccessTokenResDTO;
+import com.fly.robot.entity.TableFlybookToken;
+import com.fly.robot.entity.WeatherDTO;
+import com.fly.robot.pojo.Result;
 import com.fly.robot.service.FlyBookService;
 import com.fly.robot.util.FastJSONObjectToDto;
 import com.fly.robot.util.HttpClient;
@@ -29,6 +31,7 @@ public class FlyBookServiceImpl implements FlyBookService {
 
     /**
      * 发送天气消息到群聊中
+     *
      * @param robotWebHookAddress 群聊机器人发送消息 webhook地址
      * @param flyBookWeatherCode  天气类型代码
      * @param weatherDTO          天气数据
@@ -60,8 +63,7 @@ public class FlyBookServiceImpl implements FlyBookService {
     public TableFlybookToken getToken(String getTokenAddress, String robotAppId, String robotAppSecret, String tokenType) throws Exception {
 
         List<TableFlybookToken> tableFlyBookTokens =
-                tableFlyTokenRepository
-                        .findTopByAppIdAndAppSecretOrderByCreateAtDesc(robotAppId, robotAppSecret);
+                tableFlyTokenRepository.findTopByAppIdAndAppSecretOrderByCreateAtDesc(robotAppId, robotAppSecret);
         LocalDateTime nowTime = LocalDateTime.now();
 
         if (tableFlyBookTokens == null || tableFlyBookTokens.isEmpty())
@@ -73,7 +75,6 @@ public class FlyBookServiceImpl implements FlyBookService {
 
         return tableFlyBookTokens.get(0);
     }
-
 
     /**
      * 发送get请求获取token并存到mysql中

@@ -1,4 +1,4 @@
-package com.fly.robot.entity;
+package com.fly.robot.pojo;
 
 /**
  * 返回结果实体类

@@ -1,4 +1,4 @@
-package com.fly.robot.pojo;
+package com.fly.robot.entity;
 
 import java.util.List;
 

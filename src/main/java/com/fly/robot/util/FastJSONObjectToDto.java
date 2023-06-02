@@ -10,28 +10,16 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
  */
 public class FastJSONObjectToDto {
 
-    public static <T> T conversion(JSONObject fastJSONObject, Class<T> dtoClass){
-
-        // 将Fastjson的JSONObject转换为JSON字符串
-        String jsonString = fastJSONObject.toJSONString();
-
-        // 使用Jackson的ObjectMapper解析JSON字符串为JsonNode对象
+    public static <T> T conversion(JSONObject fastJSONObject, Class<T> dtoClass) throws Exception{
         ObjectMapper objectMapper = new ObjectMapper();
+
+        String jsonString = fastJSONObject.toJSONString();
         JsonNode jsonNode = null;
-        try {
             jsonNode = objectMapper.readTree(jsonString);
-            // 将JsonNode对象转换为Jackson中的JSONObject对象
             ObjectNode jsonObject = objectMapper.createObjectNode();
             jsonObject.setAll((ObjectNode) jsonNode);
 
-            // 打印Jackson中的JSONObject对象
-            System.out.println(jsonObject);
-
             return objectMapper.readValue(jsonObject.toString(), dtoClass);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
     }
 
 }

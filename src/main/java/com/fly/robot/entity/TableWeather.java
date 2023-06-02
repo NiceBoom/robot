@@ -1,39 +1,36 @@
-package com.fly.robot.pojo;
+package com.fly.robot.entity;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
 
-/**
- * mysql中的tb_live_weather表格
- */
 @Entity
-@Table(name = "tb_live_weather")
-public class TableLiveWeather {
-
+@Table(name = "tb_weather")
+public class TableWeather {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-
     //自增主键weather_id
     @Column(name = "id")
     private Integer weatherId;
-
     //城市代码
     @Column(name = "city_id")
     private String cityId;
-
     //城市名称
     @Column(name = "city_name")
     private String cityName;
-
-    //天气报告数据
+    //天气类型
+    @Column(name = "weather_type")
+    private String weatherType;
+    //未来天气报告数据
+    @Column(name = "forecast_weather")
+    private String forecastWeather;
+    //实时天气报告数据
     @Column(name = "live_weather")
     private String liveWeather;
-
     //创建时间
     @Column(name = "create_at")
     private LocalDateTime createAt;
 
-    public TableLiveWeather() {
+    public TableWeather() {
     }
 
     public Integer getWeatherId() {
@@ -58,6 +55,22 @@ public class TableLiveWeather {
 
     public void setCityName(String cityName) {
         this.cityName = cityName;
+    }
+
+    public String getWeatherType() {
+        return weatherType;
+    }
+
+    public void setWeatherType(String weatherType) {
+        this.weatherType = weatherType;
+    }
+
+    public String getForecastWeather() {
+        return forecastWeather;
+    }
+
+    public void setForecastWeather(String forecastWeather) {
+        this.forecastWeather = forecastWeather;
     }
 
     public String getLiveWeather() {

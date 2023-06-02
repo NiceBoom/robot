@@ -1,13 +1,11 @@
 package com.fly.robot.service.impl;
 
 import com.alibaba.fastjson.JSONObject;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fly.robot.dao.TableAddressAdcodeRepository;
+import com.fly.robot.dao.TableWeatherRepository;
 import com.fly.robot.entity.*;
 import com.fly.robot.pojo.*;
-import com.fly.robot.dao.TableForecastWeatherRepository;
-import com.fly.robot.dao.TableLiveWeatherRepository;
 import com.fly.robot.service.WeatherService;
 import com.fly.robot.util.FastJSONObjectToDto;
 import com.fly.robot.util.HttpClient;
@@ -23,75 +21,78 @@ import java.util.Map;
 @Service
 public class WeatherServiceImpl implements WeatherService {
     @Autowired
-    public TableLiveWeatherRepository tableLiveWeatherRepository;
-    @Autowired
-    public TableForecastWeatherRepository tableForecastWeatherRepository;
-    @Autowired
     public TableAddressAdcodeRepository tableAddressAdcodeRepository;
+
+    @Autowired
+    public TableWeatherRepository tableWeatherRepository;
 
     /**
      * 获取天气
+     *
      * @param APIkey     请求地址链接
-     * @param cityCode   城市代码
+     * @param cityId     城市代码
      * @param extensions 实时天气或者天气预报代码
      * @return
      */
-    public WeatherDTO getWeather(String APIkey, String cityCode, String extensions) throws Exception {
+    public WeatherDTO getWeather(String APIkey, String cityId, String extensions) throws Exception {
 
         LocalDateTime nowTime = LocalDateTime.now();
         LocalDateTime eightHoursAgo = nowTime.minus(8, ChronoUnit.HOURS);
         LocalDateTime twoHoursAgo = nowTime.minus(2, ChronoUnit.HOURS);
-
+        //获取未来天气预报
         if (GaodeConfig.GET_FORECAST_WEATHER_CODE.equals(extensions)) {
-            List<TableForecastWeather> tableForecastWeatherList =
-                    tableForecastWeatherRepository.findFirstByCityIdOrderByCreateAtDesc(cityCode);
 
-            if (tableForecastWeatherList.isEmpty() ||
-                    tableForecastWeatherList.get(0).getCreateAt().isBefore(eightHoursAgo)) {
+            List<TableWeather> tableWeatherList =
+                    tableWeatherRepository.findFirstByCityIdAndWeatherTypeOrderByCreateAtDesc(cityId, extensions);
+            //mysql中无数据或者已过期，查询新数据并保存返回
+            if (tableWeatherList.isEmpty() ||
+                    tableWeatherList.get(0).getCreateAt().isBefore(eightHoursAgo)) {
                 HashMap<String, String> reqParam = new HashMap<>();
                 ObjectMapper dtoToJsonMapper = new ObjectMapper();
                 reqParam.put("key", APIkey);
-                reqParam.put("city", cityCode);
+                reqParam.put("city", cityId);
                 reqParam.put("extensions", extensions);
                 JSONObject reqJson = HttpClient.doGet(GaodeConfig.GET_WEATHER_API_URL, reqParam);
                 WeatherDTO forecastWeatherDTO = FastJSONObjectToDto.conversion(reqJson, WeatherDTO.class);
 
-                TableForecastWeather tableForecastWeather = new TableForecastWeather();
-                tableForecastWeather.setForecastWeather(dtoToJsonMapper.writeValueAsString(forecastWeatherDTO));
-                tableForecastWeather.setCreateAt(LocalDateTime.now());
-                tableForecastWeather.setCityId(forecastWeatherDTO.getForecasts().get(0).getAdcode());
-                tableForecastWeather.setCityName(forecastWeatherDTO.getForecasts().get(0).getCity());
-                tableForecastWeatherRepository.save(tableForecastWeather);
+                TableWeather tableWeather = new TableWeather();
+                tableWeather.setForecastWeather(dtoToJsonMapper.writeValueAsString(forecastWeatherDTO));
+                tableWeather.setCreateAt(LocalDateTime.now());
+                tableWeather.setCityId(forecastWeatherDTO.getForecasts().get(0).getAdcode());
+                tableWeather.setCityName(forecastWeatherDTO.getForecasts().get(0).getCity());
+                tableWeather.setWeatherType(extensions);
+                tableWeatherRepository.save(tableWeather);
                 return forecastWeatherDTO;
             }
             ObjectMapper jsonToDtoMapper = new ObjectMapper();
-            return jsonToDtoMapper.readValue(tableForecastWeatherList.get(0).getForecastWeather(), WeatherDTO.class);
+            return jsonToDtoMapper.readValue(tableWeatherList.get(0).getForecastWeather(), WeatherDTO.class);
         }
-
+        //获取实时天气预报
         if (GaodeConfig.GET_LIVE_WEATHER_CODE.equals(extensions)) {
-            List<TableLiveWeather> tableLiveWeatherList =
-                    tableLiveWeatherRepository.findFirstByCityIdOrderByCreateAtDesc(cityCode);
-
-            if (tableLiveWeatherList.isEmpty() || tableLiveWeatherList.get(0).getCreateAt().isBefore(twoHoursAgo)) {
+            List<TableWeather> tableWeatherList =
+                    tableWeatherRepository.findFirstByCityIdAndWeatherTypeOrderByCreateAtDesc(cityId, extensions);
+            //mysql无数据或数据已过期
+            if (tableWeatherList.isEmpty() || tableWeatherList.get(0).getCreateAt().isBefore(twoHoursAgo)) {
                 HashMap<String, String> reqParam = new HashMap<>();
                 reqParam.put("key", APIkey);
-                reqParam.put("city", cityCode);
+                reqParam.put("city", cityId);
                 reqParam.put("extensions", extensions);
                 JSONObject reqJson = HttpClient.doGet(GaodeConfig.GET_WEATHER_API_URL, reqParam);
                 WeatherDTO liveWeatherDTO = FastJSONObjectToDto.conversion(reqJson, WeatherDTO.class);
 
                 ObjectMapper dtoToJsonMapper = new ObjectMapper();
-                TableLiveWeather tableLiveWeather = new TableLiveWeather();
-                tableLiveWeather.setLiveWeather(dtoToJsonMapper.writeValueAsString(liveWeatherDTO));
-                tableLiveWeather.setCreateAt(LocalDateTime.now());
-                tableLiveWeather.setCityId(liveWeatherDTO.getLives().get(0).getAdcode());
-                tableLiveWeather.setCityName(liveWeatherDTO.getLives().get(0).getCity());
-                tableLiveWeatherRepository.save(tableLiveWeather);
+                TableWeather tableWeather = new TableWeather();
+                tableWeather.setLiveWeather(dtoToJsonMapper.writeValueAsString(liveWeatherDTO));
+                tableWeather.setCreateAt(LocalDateTime.now());
+                tableWeather.setCityId(liveWeatherDTO.getLives().get(0).getAdcode());
+                tableWeather.setCityName(liveWeatherDTO.getLives().get(0).getCity());
+                tableWeather.setWeatherType(extensions);
+                tableWeatherRepository.save(tableWeather);
                 return liveWeatherDTO;
             }
             ObjectMapper jsonToDtoMapper = new ObjectMapper();
             return jsonToDtoMapper
-                    .readValue(tableLiveWeatherList.get(0).getLiveWeather(), WeatherDTO.class);
+                    .readValue(tableWeatherList.get(0).getLiveWeather(), WeatherDTO.class);
         }
         return null;
     }
@@ -107,18 +108,18 @@ public class WeatherServiceImpl implements WeatherService {
     @Override
     public TableAddressAdcode findAddressInfoByMsg(String getAddressInfoUrl, String gaodeWebApiKey, String findAddressInfoMsg) throws Exception {
         List<TableAddressAdcode> findAdcodeByAddress = tableAddressAdcodeRepository.findByAddress(findAddressInfoMsg);
-
+        //数据库中不存在则查询高德api，保存到mysql并返回
         if (findAdcodeByAddress.isEmpty()) {
             FastJSONObjectToDto fastJSONObjectToDto = new FastJSONObjectToDto();
             ObjectMapper dtoToStringMapper = new ObjectMapper();
-
             Map<String, String> sendGetRequestParamMap = new HashMap();
+            TableAddressAdcode tableAddressAdcode = new TableAddressAdcode();
+
             sendGetRequestParamMap.put("key", gaodeWebApiKey);
             sendGetRequestParamMap.put("address", findAddressInfoMsg);
-            JSONObject getAddressInfoResponseJson = HttpClient.doGet(getAddressInfoUrl, sendGetRequestParamMap);
+            GetAddressInfoFromGaodeDTO getAddressInfoFromGaodeDTO =
+                    fastJSONObjectToDto.conversion(HttpClient.doGet(getAddressInfoUrl, sendGetRequestParamMap), GetAddressInfoFromGaodeDTO.class);
 
-            GetAddressInfoFromGaodeDTO getAddressInfoFromGaodeDTO = fastJSONObjectToDto.conversion(getAddressInfoResponseJson, GetAddressInfoFromGaodeDTO.class);
-            TableAddressAdcode tableAddressAdcode = new TableAddressAdcode();
             tableAddressAdcode.setAddress(findAddressInfoMsg);
             tableAddressAdcode.setAdcode(getAddressInfoFromGaodeDTO.getGeocodes().get(0).getAdcode());
             tableAddressAdcode.setCreateAt(LocalDateTime.now());

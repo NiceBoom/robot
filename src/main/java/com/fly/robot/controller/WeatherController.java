@@ -1,9 +1,10 @@
 package com.fly.robot.controller;
 
-import com.fly.robot.dao.TableForecastWeatherRepository;
-import com.fly.robot.dao.TableLiveWeatherRepository;
-import com.fly.robot.entity.GaodeConfig;
-import com.fly.robot.pojo.*;
+import com.fly.robot.dao.TableWeatherRepository;
+import com.fly.robot.entity.TableAddressAdcode;
+import com.fly.robot.entity.TableWeather;
+import com.fly.robot.pojo.GaodeConfig;
+import com.fly.robot.entity.WeatherDTO;
 import com.fly.robot.service.WeatherService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,22 +19,17 @@ import java.util.List;
 @RequestMapping("/weather")
 @EnableScheduling
 public class WeatherController {
-
-    private final WeatherService weatherService;
-    private final TableLiveWeatherRepository liveWeatherRepository;
-    private final TableForecastWeatherRepository forecastWeatherRepository;
-
-    @Autowired
-    public WeatherController(TableLiveWeatherRepository liveWeatherRepository,
-                             TableForecastWeatherRepository forecastWeatherRepository,
-                             WeatherService weatherService) {
-        this.liveWeatherRepository = liveWeatherRepository;
-        this.forecastWeatherRepository = forecastWeatherRepository;
-        this.weatherService = weatherService;
-    }
-
     @Value("${gaode.web-api-key}")
     private String webApiKey; //读取高德ApiKey
+    private final WeatherService weatherService;
+    private final TableWeatherRepository weatherRepository;
+
+    @Autowired
+    public WeatherController(WeatherService weatherService,
+                             TableWeatherRepository tableWeatherRepository) {
+        this.weatherService = weatherService;
+        this.weatherRepository = tableWeatherRepository;
+    }
 
     //从高德API查询实时天气并保存到mysql中
     //每天早八点半，每隔一小时获取一次实时天气，一直到晚上21.30
@@ -73,14 +69,14 @@ public class WeatherController {
 
     //查找所有在mysql中的实时天气数据
     @GetMapping("/getAllLiveWeatherFromMysql")
-    public List<TableLiveWeather> getAllLiveWeatherFromMysql() {
-        return liveWeatherRepository.findAll();
+    public List<TableWeather> getAllLiveWeatherFromMysql() {
+        return weatherRepository.findAll();
     }
 
     //查找所有在mysql中的天气预报数据
     @GetMapping("/getAllForecastWeatherFormMysql")
-    public List<TableForecastWeather> getAllForecastWeatherFormMysql() {
-        return forecastWeatherRepository.findAll();
+    public List<TableWeather> getAllForecastWeatherFormMysql() {
+        return weatherRepository.findAll();
     }
 
     //查找具体地址信息
@@ -95,7 +91,7 @@ public class WeatherController {
      * @throws Exception
      */
     @GetMapping("/getForecastWeatherForAddress")
-    public WeatherDTO getForecastWeatherForAddress(@RequestParam("address") String findAddressInfoMsg) throws Exception{
+    public WeatherDTO getForecastWeatherForAddress(@RequestParam("address") String findAddressInfoMsg) throws Exception {
         TableAddressAdcode addressInfoByMsg = weatherService.findAddressInfoByMsg(GaodeConfig.GET_ADDRESS_ADCODE_URL, webApiKey, findAddressInfoMsg);
         return weatherService.getWeather(webApiKey, addressInfoByMsg.getAdcode(), GaodeConfig.GET_FORECAST_WEATHER_CODE);
         //TODO 在redis添加过期码，adcode、对应的城市名称、过期时间，人工查询天气先到redis或者mysql中查询，过期再查询新的天气情况。(可以优化加入es)

@@ -2,9 +2,7 @@ package com.fly.robot.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fly.robot.entity.FlyBookConfig;
-import com.fly.robot.entity.GaodeConfig;
-import com.fly.robot.entity.Result;
+import com.fly.robot.entity.*;
 import com.fly.robot.pojo.*;
 import com.fly.robot.service.FlyBookService;
 import com.fly.robot.service.WeatherService;
@@ -25,19 +23,14 @@ import java.util.Map;
 public class FlyBookController {
     @Autowired
     private FlyBookService flyBookService;
-
     @Autowired
     private WeatherService weatherService;
-
     @Value("${feishu.robot-webhook-address}")
     private String robotWebHookAddress;//读取飞书robot web hook 地址
-
     @Value("${feishu.appid}")
     private String robotAppId; //飞书机器人appId
-
     @Value("${feishu.app-secret}")
     private String robotAppSecret; //飞书机器人秘钥
-
     @Value("${gaode.web-api-key}")
     private String webApiKey; //读取高德ApiKey
 

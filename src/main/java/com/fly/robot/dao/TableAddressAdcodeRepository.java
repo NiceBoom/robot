@@ -1,6 +1,6 @@
 package com.fly.robot.dao;
 
-import com.fly.robot.pojo.TableAddressAdcode;
+import com.fly.robot.entity.TableAddressAdcode;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

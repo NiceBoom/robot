@@ -1,8 +1,8 @@
 package com.fly.robot.util;
 
-import com.fly.robot.entity.FlyBookConfig;
+import com.fly.robot.pojo.FlyBookConfig;
 
-import com.fly.robot.pojo.WeatherDTO;
+import com.fly.robot.entity.WeatherDTO;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -14,6 +14,7 @@ import java.util.ArrayList;
 public class WeatherDtoToMsg {
     public static String conversionWeatherDtoToMsg(WeatherDTO weatherDTO, String sendMsgCode) {
 
+        //自动发送实时天气返回消息
         if (FlyBookConfig.SEND_LIVE_WEATHER_MSG_CODE.equals(sendMsgCode)) {
             WeatherDTO.Live liveWeatherInfo = weatherDTO.getLives().get(0);
             String weatherReportTime =
@@ -24,7 +25,7 @@ public class WeatherDtoToMsg {
                     "，实时气温为" + liveWeatherInfo.getTemperature() + "摄氏度，空气湿度为" + liveWeatherInfo.getHumidity() +
                     "%，" + liveWeatherInfo.getWinddirection() + "风" + liveWeatherInfo.getWindpower() + "级。更新时间为" + weatherReportTime + "。";
         }
-
+        //查找发送实时天气返回消息
         if (FlyBookConfig.SEARCH_LIVE_WEATHER_MSG_CODE.equals(sendMsgCode)) {
             WeatherDTO.Live liveWeatherInfo = weatherDTO.getLives().get(0);
             String weatherReportTime =
@@ -35,7 +36,7 @@ public class WeatherDtoToMsg {
                     "，实时气温为" + liveWeatherInfo.getTemperature() + "摄氏度，空气湿度为" + liveWeatherInfo.getHumidity() +
                     "%，" + liveWeatherInfo.getWinddirection() + "风" + liveWeatherInfo.getWindpower() + "级。更新时间为" + weatherReportTime + "。";
         }
-
+        //自动发送未来天气预报返回消息
         if (FlyBookConfig.SEND_FORECAST_WEATHER_MSG_CODE.equals(sendMsgCode)) {
             ArrayList<WeatherDTO.Forecast.Cast> forecastWeatherCasts = weatherDTO.getForecasts().get(0).getCasts();
             String weatherReportTime =
@@ -70,7 +71,7 @@ public class WeatherDtoToMsg {
             }
             return forecastWeatherMsg.toString();
         }
-
+        //查找未来天气预报返回消息
         if (FlyBookConfig.SEARCH_FORECAST_WEATHER_MSG_CODE.equals(sendMsgCode)) {
             ArrayList<WeatherDTO.Forecast.Cast> forecastWeatherCasts = weatherDTO.getForecasts().get(0).getCasts();
             String weatherReportTime =

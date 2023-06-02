@@ -1,6 +1,6 @@
 package com.fly.robot.dao;
 
-import com.fly.robot.pojo.TableFlybookToken;
+import com.fly.robot.entity.TableFlybookToken;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

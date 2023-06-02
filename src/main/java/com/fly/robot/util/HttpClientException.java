@@ -1,6 +1,6 @@
 package com.fly.robot.util;
 
-public class HttpClientException extends RuntimeException{
+public class HttpClientException extends RuntimeException {
     public HttpClientException() {
         super();
     }
@@ -14,15 +14,15 @@ public class HttpClientException extends RuntimeException{
     }
 
     public HttpClientException(String message, Object... objects) {
-        super(convertMessage(message,objects));
+        super(convertMessage(message, objects));
     }
 
     public HttpClientException(Throwable cause) {
         super(cause);
     }
 
-    public static String convertMessage(String message,Object... objects) {
-        if (message.indexOf("{}")>0){
+    public static String convertMessage(String message, Object... objects) {
+        if (message.indexOf("{}") > 0) {
             String s = message.replaceAll("\\{\\}", "%s");
             String format = null;
             try {
@@ -31,7 +31,7 @@ public class HttpClientException extends RuntimeException{
                 return message;
             }
             return format;
-        }else {
+        } else {
             return message;
         }
     }

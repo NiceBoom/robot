@@ -1,4 +1,4 @@
-package com.fly.robot.entity;
+package com.fly.robot.pojo;
 
 /**
  * 飞书配置常量数据
