@@ -7,5 +7,5 @@ import java.util.List;
 
 public interface TableAddressAdcodeRepository extends JpaRepository<TableAddressAdcode, Long> {
     //根据地址查找adcode数据
-    List<TableAddressAdcode> findByAddress(String address);
+    TableAddressAdcode findByAddress(String address);
 }

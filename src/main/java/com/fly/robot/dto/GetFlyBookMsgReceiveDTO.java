@@ -1,4 +1,4 @@
-package com.fly.robot.entity;
+package com.fly.robot.dto;
 
 import java.util.List;
 

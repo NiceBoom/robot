@@ -2,10 +2,15 @@ package com.fly.robot.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fly.robot.dto.GetFlyBookMsgReceiveDTO;
+import com.fly.robot.dto.WeatherDTO;
 import com.fly.robot.entity.*;
 import com.fly.robot.pojo.*;
 import com.fly.robot.service.FlyBookService;
 import com.fly.robot.service.WeatherService;
+import com.fly.robot.util.MsgVerification;
+import com.fly.robot.util.WeatherDtoToMsg;
+import lombok.extern.slf4j.XSlf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -25,45 +30,29 @@ public class FlyBookController {
     private FlyBookService flyBookService;
     @Autowired
     private WeatherService weatherService;
-    @Value("${feishu.robot-webhook-address}")
-    private String robotWebHookAddress;//读取飞书robot web hook 地址
-    @Value("${feishu.appid}")
-    private String robotAppId; //飞书机器人appId
-    @Value("${feishu.app-secret}")
-    private String robotAppSecret; //飞书机器人秘钥
-    @Value("${gaode.web-api-key}")
-    private String webApiKey; //读取高德ApiKey
 
-    //发送实时天气数据消息
+    //发送默认城市实时天气数据消息
     //每天早八点35，每隔一小时发一次，一直到晚上21.30 发送实时天气数据
     //或者也可以手动发送
     @Scheduled(cron = "0 35 8,9,10,11,12,13,14,15,16,17,18,19,20,21 * * ? ")
     @PostMapping("/sendLiveWeatherMsg")
     String sendLiveWeatherMsg() throws Exception {
+        WeatherDTO defaultCityForecastWeatherDto = weatherService.getWeather(GaodeConfig.BEIJING_CITY_ADCODE, GaodeConfig.GET_LIVE_WEATHER_CODE);
+        String weatherMsg = WeatherDtoToMsg.conversionWeatherDtoToMsg(defaultCityForecastWeatherDto, FlyBookConfig.SEND_LIVE_WEATHER_MSG_CODE);
         return flyBookService
-                .sendDefaultCityWeatherMsgToGroupChat(robotWebHookAddress,
-                        FlyBookConfig.SEND_LIVE_WEATHER_MSG_CODE,
-                        weatherService.getWeather(webApiKey, GaodeConfig.BEIJING_CITY_ADCODE, GaodeConfig.GET_LIVE_WEATHER_CODE));
+                .sendDefaultCityWeatherMsgToGroupChat(FlyBookConfig.SEND_LIVE_WEATHER_MSG_CODE, FlyBookConfig.SEND_MSG_TEXT_TYPE, weatherMsg);
     }
 
-    //发送未来天气预报情况
+    //发送默认城市未来天气预报情况
     //每天9:00、10:00、12:00、13:00、19:00、20:00自动发送未来的天气预报
     //或者也可以手动发送
     @Scheduled(cron = "0 10 9,10,12,13,19,20 * * ? ")
     @PostMapping("/sendForecastWeatherMsg")
     String sendForecastWeatherMsg() throws Exception {
+        WeatherDTO defaultCityForecastWeatherDto = weatherService.getWeather(GaodeConfig.BEIJING_CITY_ADCODE, GaodeConfig.GET_FORECAST_WEATHER_CODE);
+        String weatherMsg = WeatherDtoToMsg.conversionWeatherDtoToMsg(defaultCityForecastWeatherDto, FlyBookConfig.SEND_FORECAST_WEATHER_MSG_CODE);
         return flyBookService
-                .sendDefaultCityWeatherMsgToGroupChat(robotWebHookAddress,
-                        FlyBookConfig.SEND_FORECAST_WEATHER_MSG_CODE,
-                        weatherService.getWeather(webApiKey, GaodeConfig.BEIJING_CITY_ADCODE, GaodeConfig.GET_FORECAST_WEATHER_CODE));
-    }
-
-    //获取Tenant Access Token
-    //Tenant Access Token 代表使用应用的身份操作 OpenAPI，API 所能操作的数据资源范围受限于应用的身份所能操作的资源范围
-    //如果你的业务逻辑不需要操作用户的数据资源，仅需操作应用自己拥有的资源（比如在应用自己的文档目录空间下创建云文档），则推荐使用 Tenant Access Token，无需额外申请授权。
-    @GetMapping("/getTenantAccessToken")
-    TableFlybookToken getTenantAccessToken() throws Exception {
-        return flyBookService.getToken(FlyBookConfig.GET_TENANT_ACCESS_TOKEN_ADDRESS, robotAppId, robotAppSecret, FlyBookConfig.GET_FLYBOOK_TENANT_ACCESS_TOKEN);
+                .sendDefaultCityWeatherMsgToGroupChat(FlyBookConfig.SEND_FORECAST_WEATHER_MSG_CODE, FlyBookConfig.SEND_MSG_TEXT_TYPE, weatherMsg);
     }
 
     /**
@@ -74,7 +63,7 @@ public class FlyBookController {
      * @throws Exception
      */
     @PostMapping("/feishuRobotReceiveMessageProcess")
-    String feishuRobotReceiveMessageProcess(@RequestBody String flyBookMsgReceiveString) throws Exception {
+    void feishuRobotReceiveMessageProcess(@RequestBody String flyBookMsgReceiveString) throws Exception {
         //TODO 校验推送类型
         System.out.println("飞书推送的消息: " + flyBookMsgReceiveString);
 
@@ -85,22 +74,28 @@ public class FlyBookController {
         String msgContent = flyBookMsgReceiveDTO.getEvent().getMessage().getContent();
         Map<String, String> contentMap = objectMapper.readValue(msgContent, new TypeReference<Map<String, String>>() {
         });
-        String msgText = contentMap.get("text");
-        TableAddressAdcode tableAddressAdcode = weatherService.findAddressInfoByMsg(GaodeConfig.GET_ADDRESS_ADCODE_URL, webApiKey, msgText);
-
-        if (msgText.contains("实时") || msgText.contains("现在") || msgText.contains("目前") ||
-                msgText.contains("当前") || msgText.contains("当下") || msgText.contains("眼下") || msgText.contains("现状") ||
-                msgText.contains("本时") || msgText.contains("即时")) {
-
-            WeatherDTO getLiveWeatherDto = weatherService.getWeather(webApiKey, tableAddressAdcode.getAdcode(), GaodeConfig.GET_LIVE_WEATHER_CODE);
-            Result result = flyBookService.
-                    sendWeatherMsgToOpenId(robotAppId, robotAppSecret, openId, FlyBookConfig.SEND_LIVE_WEATHER_MSG_CODE, FlyBookConfig.SEND_MSG_TEXT_TYPE, getLiveWeatherDto);
-            return result.toString();
-        } else {
-            WeatherDTO getForecastWeatherDto = weatherService.getWeather(webApiKey, tableAddressAdcode.getAdcode(), GaodeConfig.GET_FORECAST_WEATHER_CODE);
-            Result result = flyBookService.
-                    sendWeatherMsgToOpenId(robotAppId, robotAppSecret, openId, openId, FlyBookConfig.SEND_MSG_TEXT_TYPE, getForecastWeatherDto);
-            return result.toString();
+        //查询实时天气
+        if (FlyBookConfig.SEARCH_LIVE_WEATHER_MSG_CODE
+                .equals(MsgVerification
+                        .queryWeatherMsgVerification(contentMap.get("text")))) {
+            TableAddressAdcode tableAddressAdcode = weatherService.findAddressInfoByMsg(contentMap.get("text").split(",|，")[0]);
+            WeatherDTO getLiveWeatherDto = weatherService.getWeather(tableAddressAdcode.getAdcode(), GaodeConfig.GET_LIVE_WEATHER_CODE);
+            String sendLiveWeatherMsg = WeatherDtoToMsg.conversionWeatherDtoToMsg(getLiveWeatherDto, FlyBookConfig.SEARCH_LIVE_WEATHER_MSG_CODE);
+            flyBookService.sendWeatherMsgToOpenId(FlyBookConfig.MSG_RECEIVE_ID_TYPE_OPEN_ID, openId, FlyBookConfig.SEND_MSG_TEXT_TYPE, sendLiveWeatherMsg);
+            return;
         }
+        //查询未来天气
+        if (FlyBookConfig.SEARCH_FORECAST_WEATHER_MSG_CODE
+                .equals(MsgVerification
+                        .queryWeatherMsgVerification(contentMap.get("text")))) {
+            TableAddressAdcode tableAddressAdcode = weatherService.findAddressInfoByMsg(contentMap.get("text").split(",|，")[0]);
+            WeatherDTO getForecastWeatherDto = weatherService.getWeather(tableAddressAdcode.getAdcode(), GaodeConfig.GET_FORECAST_WEATHER_CODE);
+            String sendForecastWeatherMsg = WeatherDtoToMsg.conversionWeatherDtoToMsg(getForecastWeatherDto, FlyBookConfig.SEARCH_FORECAST_WEATHER_MSG_CODE);
+            flyBookService.sendWeatherMsgToOpenId(FlyBookConfig.MSG_RECEIVE_ID_TYPE_OPEN_ID, openId, FlyBookConfig.SEND_MSG_TEXT_TYPE, sendForecastWeatherMsg);
+            return;
+        }
+        //发送的消息格式不符合，发送错误提示消息
+        flyBookService.sendWeatherMsgToOpenId(FlyBookConfig.MSG_RECEIVE_ID_TYPE_OPEN_ID, openId, FlyBookConfig.SEND_MSG_TEXT_TYPE, FlyBookConfig.SEND_ERROR_WEATHER_MSG);
+
     }
 }
