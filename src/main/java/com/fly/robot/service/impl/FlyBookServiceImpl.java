@@ -2,12 +2,15 @@ package com.fly.robot.service.impl;
 
 import com.alibaba.fastjson.JSONObject;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fly.robot.dao.TableFlyTokenRepository;
 import com.fly.robot.dto.GetTenantAccessTokenResDTO;
 import com.fly.robot.entity.TableFlybookToken;
 import com.fly.robot.dto.WeatherDTO;
+import com.fly.robot.pojo.FlyBookConfig;
 import com.fly.robot.pojo.Result;
 import com.fly.robot.service.FlyBookService;
+import com.fly.robot.service.RedisService;
 import com.fly.robot.util.FastJSONObjectToDto;
 import com.fly.robot.util.HttpClient;
 import com.fly.robot.util.WeatherDtoToMsg;
@@ -19,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import javax.persistence.Table;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
@@ -35,12 +39,15 @@ public class FlyBookServiceImpl implements FlyBookService {
     private String robotAppSecret; //飞书机器人秘钥
     @Autowired
     private TableFlyTokenRepository tableFlyTokenRepository;
+    @Autowired
+    private RedisService redisService;
 
     /**
      * 发送默认城市天气到群聊
+     *
      * @param flyBookWeatherCode 天气类型代码
      * @param sendMsgType
-     * @param msg         消息内容
+     * @param msg                消息内容
      * @return
      * @throws Exception
      */
@@ -57,9 +64,75 @@ public class FlyBookServiceImpl implements FlyBookService {
     }
 
     /**
+     * 获取TenantAccessToken
+     *
+     * @param tokenType 获取的token类型
+     * @return data
+     */
+    @Override
+    public TableFlybookToken getToken(String tokenType) throws Exception {
+
+        LocalDateTime nowTime = LocalDateTime.now();
+        ObjectMapper objectMapper = new ObjectMapper();
+        String redisToken = redisService.get(robotAppId + robotAppSecret);
+
+        if (redisToken == null) {
+            TableFlybookToken tableFlybookToken = tableFlyTokenRepository
+                    .findTopByAppIdAndAppSecretOrderByCreateAtDesc(robotAppId, robotAppSecret);
+
+            if (tableFlybookToken == null)
+                return doGetReqGetToken(FlyBookConfig.GET_TENANT_ACCESS_TOKEN_ADDRESS, robotAppId, robotAppSecret, tokenType);
+            LocalDateTime expireAgo = nowTime.minus(tableFlybookToken.getTokenExpire() - 10 * 60, ChronoUnit.SECONDS);
+            if (tableFlybookToken.getCreateAt().isBefore(expireAgo))
+                return doGetReqGetToken(FlyBookConfig.GET_TENANT_ACCESS_TOKEN_ADDRESS, robotAppId, robotAppSecret, tokenType);
+            return tableFlybookToken;
+        }
+        return objectMapper.readValue(redisToken, TableFlybookToken.class);
+    }
+
+    /**
+     * 发送get请求获取token并存到redis与mysql中
+     *
+     * @param getTokenAddress 获取Token链接地址
+     * @param robotAppId
+     * @param robotAppSecret
+     * @param tokenType       获取的token类型
+     * @return data
+     */
+    private TableFlybookToken doGetReqGetToken(String getTokenAddress, String robotAppId,
+                                               String robotAppSecret, String tokenType) throws Exception {
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+        Map<String, String> sendPostRequestBodyMap = new HashMap();
+        sendPostRequestBodyMap.put("app_id", robotAppId);
+        sendPostRequestBodyMap.put("app_secret", robotAppSecret);
+        JSONObject getTenantAccessTokenResJson =
+                HttpClient.doPostJson(getTokenAddress,
+                        objectMapper.writeValueAsString(sendPostRequestBodyMap));
+
+        GetTenantAccessTokenResDTO getTenantAccessTokenRes =
+                FastJSONObjectToDto.conversion(getTenantAccessTokenResJson, GetTenantAccessTokenResDTO.class);
+        //TODO 需要加密与解密敏感数据
+        TableFlybookToken tableFlybookToken = new TableFlybookToken();
+        tableFlybookToken.setToken(getTenantAccessTokenRes.getTenantAccessToken());
+        tableFlybookToken.setTokenExpire(getTenantAccessTokenRes.getExpire());
+        tableFlybookToken.setTokenType(tokenType);
+        tableFlybookToken.setAppId(robotAppId);
+        tableFlybookToken.setAppSecret(robotAppSecret);
+        tableFlybookToken.setCreateAt(LocalDateTime.now());
+        tableFlyTokenRepository.save(tableFlybookToken);
+
+        redisService.set(robotAppId + robotAppSecret, objectMapper.writeValueAsString(tableFlybookToken));
+        redisService.expire(robotAppId + robotAppSecret, tableFlybookToken.getTokenExpire() - 10 * 60);
+
+        return tableFlybookToken;
+    }
+
+    /**
      * 发送查询后的天气消息到查询人
      *
-     * @param openId      消息接收人的openId
+     * @param id          消息接收人的openId
      * @param sendMsgType 消息类型
      * @param msg         消息内容
      * @return
@@ -67,7 +140,7 @@ public class FlyBookServiceImpl implements FlyBookService {
      */
     @Override
     public Result sendWeatherMsgToOpenId(String idType,
-                                         String openId,
+                                         String id,
                                          String sendMsgType,
                                          String msg) throws Exception {
         ObjectMapper mapToStringMapper = new ObjectMapper();
@@ -75,7 +148,7 @@ public class FlyBookServiceImpl implements FlyBookService {
         CreateMessageReqBody createMessageReqBody = new CreateMessageReqBody();
 
         Client feishuClient = Client.newBuilder(robotAppId, robotAppSecret).build();
-        createMessageReqBody.setReceiveId(openId);
+        createMessageReqBody.setReceiveId(id);
         createMessageReqBody.setMsgType(sendMsgType);
         messageContentMap.put(sendMsgType, msg);
         createMessageReqBody.setContent(mapToStringMapper.writeValueAsString(messageContentMap));

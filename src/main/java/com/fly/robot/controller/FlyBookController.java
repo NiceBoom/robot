@@ -10,9 +10,12 @@ import com.fly.robot.service.FlyBookService;
 import com.fly.robot.service.WeatherService;
 import com.fly.robot.util.MsgVerification;
 import com.fly.robot.util.WeatherDtoToMsg;
-import lombok.extern.slf4j.XSlf4j;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -20,24 +23,32 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
+import static jdk.nashorn.internal.runtime.regexp.joni.Config.log;
+
 @RestController
-@CrossOrigin
 @RequestMapping("/flyBook")
-@Component
 @EnableScheduling
+@Api(tags = "FlyBookController")
+@Component
+@Slf4j
 public class FlyBookController {
     @Autowired
     private FlyBookService flyBookService;
     @Autowired
     private WeatherService weatherService;
+    private final static Logger LOGGER =LoggerFactory.getLogger(FlyBookController.class);
+
 
     //发送默认城市实时天气数据消息
     //每天早八点35，每隔一小时发一次，一直到晚上21.30 发送实时天气数据
     //或者也可以手动发送
+    @ApiOperation("发送实时天气消息")
     @Scheduled(cron = "0 35 8,9,10,11,12,13,14,15,16,17,18,19,20,21 * * ? ")
     @PostMapping("/sendLiveWeatherMsg")
     String sendLiveWeatherMsg() throws Exception {
         WeatherDTO defaultCityForecastWeatherDto = weatherService.getWeather(GaodeConfig.BEIJING_CITY_ADCODE, GaodeConfig.GET_LIVE_WEATHER_CODE);
+        log.info("log获取默认城市天气dto:{}", defaultCityForecastWeatherDto);
+        LOGGER.info("logger获取默认城市天气dto:{}", defaultCityForecastWeatherDto);
         String weatherMsg = WeatherDtoToMsg.conversionWeatherDtoToMsg(defaultCityForecastWeatherDto, FlyBookConfig.SEND_LIVE_WEATHER_MSG_CODE);
         return flyBookService
                 .sendDefaultCityWeatherMsgToGroupChat(FlyBookConfig.SEND_LIVE_WEATHER_MSG_CODE, FlyBookConfig.SEND_MSG_TEXT_TYPE, weatherMsg);
