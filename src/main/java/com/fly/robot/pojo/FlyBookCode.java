@@ -3,7 +3,7 @@ package com.fly.robot.pojo;
 /**
  * 飞书配置常量数据
  */
-public class FlyBookConfig {
+public class FlyBookCode {
 
     //url
     public static final String GET_TENANT_ACCESS_TOKEN_ADDRESS =

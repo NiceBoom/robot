@@ -1,7 +1,7 @@
 package com.fly.robot.service;
 
 
-import com.fly.robot.entity.TableAddressAdcode;
+import com.fly.robot.entity.AddressAdcode;
 import com.fly.robot.dto.WeatherDTO;
 
 public interface WeatherService {
@@ -12,7 +12,7 @@ public interface WeatherService {
      * @param findAddressInfoMsg 需要查找具体信息的地址
      * @return
      */
-    TableAddressAdcode findAddressInfoByMsg(String findAddressInfoMsg) throws Exception;
+    AddressAdcode findAddressInfoByMsg(String findAddressInfoMsg) throws Exception;
 
     /**
      * 发送请求获取天气

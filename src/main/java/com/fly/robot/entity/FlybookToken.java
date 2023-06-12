@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "tb_flybook_token")
-public class TableFlybookToken {
+public class FlybookToken {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -38,7 +38,7 @@ public class TableFlybookToken {
     @Column(name = "create_at")
     private LocalDateTime createAt;
 
-    public TableFlybookToken() {
+    public FlybookToken() {
     }
 
     public Integer getId() {

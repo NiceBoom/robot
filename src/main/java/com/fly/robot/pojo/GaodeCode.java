@@ -3,7 +3,7 @@ package com.fly.robot.pojo;
 /**
  * 高德配置常量数据
  */
-public class GaodeConfig {
+public class GaodeCode {
 
     //请求URL
     //获取地理编码API服务地址

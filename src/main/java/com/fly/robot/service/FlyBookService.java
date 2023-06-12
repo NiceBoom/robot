@@ -1,8 +1,6 @@
 package com.fly.robot.service;
 
-import com.fly.robot.entity.TableFlybookToken;
 import com.fly.robot.pojo.Result;
-import com.fly.robot.dto.WeatherDTO;
 
 public interface FlyBookService {
 
@@ -28,5 +26,5 @@ public interface FlyBookService {
      */
     String sendDefaultCityWeatherMsgToGroupChat(String flyBookWeatherCode, String sendMsgType, String msg) throws Exception;
 
-    TableFlybookToken getToken(String tokenType) throws Exception;
+
 }

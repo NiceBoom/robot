@@ -1,6 +1,6 @@
 package com.fly.robot.util;
 
-import com.fly.robot.pojo.FlyBookConfig;
+import com.fly.robot.pojo.FlyBookCode;
 
 import com.fly.robot.dto.WeatherDTO;
 
@@ -15,7 +15,7 @@ public class WeatherDtoToMsg {
     public static String conversionWeatherDtoToMsg(WeatherDTO weatherDTO, String sendMsgCode) {
 
         //自动发送实时天气返回消息
-        if (FlyBookConfig.SEND_LIVE_WEATHER_MSG_CODE.equals(sendMsgCode)) {
+        if (FlyBookCode.SEND_LIVE_WEATHER_MSG_CODE.equals(sendMsgCode)) {
             WeatherDTO.Live liveWeatherInfo = weatherDTO.getLives().get(0);
             String weatherReportTime =
                     LocalDateTime.parse(weatherDTO.getLives().get(0).getReporttime(),
@@ -26,7 +26,7 @@ public class WeatherDtoToMsg {
                     "%，" + liveWeatherInfo.getWinddirection() + "风" + liveWeatherInfo.getWindpower() + "级。更新时间为" + weatherReportTime + "。";
         }
         //查找发送实时天气返回消息
-        if (FlyBookConfig.SEARCH_LIVE_WEATHER_MSG_CODE.equals(sendMsgCode)) {
+        if (FlyBookCode.SEARCH_LIVE_WEATHER_MSG_CODE.equals(sendMsgCode)) {
             WeatherDTO.Live liveWeatherInfo = weatherDTO.getLives().get(0);
             String weatherReportTime =
                     LocalDateTime.parse(weatherDTO.getLives().get(0).getReporttime(),
@@ -37,7 +37,7 @@ public class WeatherDtoToMsg {
                     "%，" + liveWeatherInfo.getWinddirection() + "风" + liveWeatherInfo.getWindpower() + "级。更新时间为" + weatherReportTime + "。";
         }
         //自动发送未来天气预报返回消息
-        if (FlyBookConfig.SEND_FORECAST_WEATHER_MSG_CODE.equals(sendMsgCode)) {
+        if (FlyBookCode.SEND_FORECAST_WEATHER_MSG_CODE.equals(sendMsgCode)) {
             ArrayList<WeatherDTO.Forecast.Cast> forecastWeatherCasts = weatherDTO.getForecasts().get(0).getCasts();
             String weatherReportTime =
                     LocalDateTime.parse(weatherDTO.getForecasts().get(0).getReporttime(),
@@ -72,7 +72,7 @@ public class WeatherDtoToMsg {
             return forecastWeatherMsg.toString();
         }
         //查找未来天气预报返回消息
-        if (FlyBookConfig.SEARCH_FORECAST_WEATHER_MSG_CODE.equals(sendMsgCode)) {
+        if (FlyBookCode.SEARCH_FORECAST_WEATHER_MSG_CODE.equals(sendMsgCode)) {
             ArrayList<WeatherDTO.Forecast.Cast> forecastWeatherCasts = weatherDTO.getForecasts().get(0).getCasts();
             String weatherReportTime =
                     LocalDateTime.parse(weatherDTO.getForecasts().get(0).getReporttime(),

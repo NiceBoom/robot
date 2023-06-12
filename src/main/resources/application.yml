@@ -13,6 +13,7 @@ spring:
     url: jdbc:mysql://192.168.200.128:3306/weather?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=UTC
     username: root
     password: root
+    driver-class-name: com.mysql.jdbc.Driver
   jpa:
     database-platform: org.hibernate.dialect.MySQL57Dialect
   redis:
@@ -31,6 +32,15 @@ feishu:
   robot-webhook-address: https://open.feishu.cn/open-apis/bot/v2/hook/08999382-e021-413f-87bf-37017ba7f55f
 gaode:
   web-api-key: 4516693f55a712c8d8c992aaa2dd63a3
+ali:
+  sms:
+    access-key-id: LTAI5tNga1MBdenfnu39rUJN
+    access-key-secret: xWqjqBh68qCu9zgyyK3NErKZkq09cJ
+jwt:
+  secret: your-jwt-secret
+  expiration: 604800
+  tokenHead: 'Bearer '
+
 logging:
   level:
     root: INFO

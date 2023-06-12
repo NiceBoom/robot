@@ -1,18 +1,13 @@
 package com.fly.robot.controller;
 
-import com.fly.robot.dao.TableWeatherRepository;
-import com.fly.robot.entity.TableAddressAdcode;
-import com.fly.robot.entity.TableWeather;
-import com.fly.robot.pojo.GaodeConfig;
+import com.fly.robot.dao.WeatherRepository;
+import com.fly.robot.pojo.GaodeCode;
 import com.fly.robot.dto.WeatherDTO;
 import com.fly.robot.service.WeatherService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @CrossOrigin
@@ -20,13 +15,13 @@ import java.util.List;
 @EnableScheduling
 public class WeatherController {
     private final WeatherService weatherService;
-    private final TableWeatherRepository weatherRepository;
+    private final WeatherRepository weatherRepository;
 
     @Autowired
     public WeatherController(WeatherService weatherService,
-                             TableWeatherRepository tableWeatherRepository) {
+                             WeatherRepository weatherRepository) {
         this.weatherService = weatherService;
-        this.weatherRepository = tableWeatherRepository;
+        this.weatherRepository = weatherRepository;
     }
 
     //从高德API查询实时天气并保存到mysql中
@@ -35,7 +30,7 @@ public class WeatherController {
     @Scheduled(cron = "0 30 8,9,10,11,12,13,14,15,16,17,18,19,20,21 * * ? ")
     @GetMapping("/findLiveWeatherSaveToMysql")
     public WeatherDTO findLiveWeatherSaveToMysql() throws Exception {
-        return weatherService.getWeather(GaodeConfig.BEIJING_CITY_ADCODE, GaodeConfig.GET_LIVE_WEATHER_CODE);
+        return weatherService.getWeather(GaodeCode.BEIJING_CITY_ADCODE, GaodeCode.GET_LIVE_WEATHER_CODE);
     }
 
     //从高德API查询天气预报并保存到mysql中
@@ -44,7 +39,7 @@ public class WeatherController {
     @Scheduled(cron = "0 0 9,10,12,13,19,20 * * ? ")
     @GetMapping("/findForecastWeatherToMysql")
     public WeatherDTO findForecastWeatherToMysql() throws Exception {
-        return weatherService.getWeather(GaodeConfig.BEIJING_CITY_ADCODE, GaodeConfig.GET_FORECAST_WEATHER_CODE);
+        return weatherService.getWeather(GaodeCode.BEIJING_CITY_ADCODE, GaodeCode.GET_FORECAST_WEATHER_CODE);
     }
 
         //TODO 在redis添加过期码，adcode、对应的城市名称、过期时间，人工查询天气先到redis或者mysql中查询，过期再查询新的天气情况。(可以优化加入es)

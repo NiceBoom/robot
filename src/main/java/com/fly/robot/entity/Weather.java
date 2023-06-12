@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "tb_weather")
-public class TableWeather {
+public class Weather {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     //自增主键weather_id
@@ -30,7 +30,7 @@ public class TableWeather {
     @Column(name = "create_at")
     private LocalDateTime createAt;
 
-    public TableWeather() {
+    public Weather() {
     }
 
     public Integer getWeatherId() {

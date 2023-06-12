@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "tb_address_adcode")
-public class TableAddressAdcode {
+public class AddressAdcode {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -28,7 +28,7 @@ public class TableAddressAdcode {
     @Column(name = "create_at")
     private LocalDateTime createAt;
 
-    public TableAddressAdcode() {
+    public AddressAdcode() {
     }
 
     public Integer getAddressId() {
