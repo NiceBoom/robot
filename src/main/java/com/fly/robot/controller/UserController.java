@@ -4,7 +4,6 @@ import com.fly.robot.entity.User;
 import com.fly.robot.pojo.Result;
 import com.fly.robot.pojo.StatusCode;
 import com.fly.robot.pojo.UserCode;
-import com.fly.robot.service.NoteService;
 import com.fly.robot.service.UserService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -26,32 +25,40 @@ public class UserController {
 
     @Autowired
     private UserService userService;
-    @Autowired
-    private NoteService noteService;
 
     private final static Logger LOGGER = LoggerFactory.getLogger(UserController.class);
 
     @ApiOperation("发送验证码")
-    @GetMapping("/sendAuthCode")
+    @GetMapping ("/sendAuthCode")
     void sendAuthCode(@RequestParam("phone") String phone) throws Exception {
-        noteService.sendAuthCode(phone);
+        userService.sendAuthCode(phone);
     }
 
     @ApiOperation("新建用户")
     @PostMapping("/register")
     Result register(@RequestBody User user, @RequestParam("authCode") String authCode) {
-        if(noteService.verifyCode(user.getPhone(),authCode)){
-            userService.register(user);
-            return new Result();
+        if(userService.verifyCode(user.getPhone(),authCode)){
+            String register = userService.register(user);
+            if (UserCode.CREATE_USER_ERROR_PHONE_NUMBER_REPETITION.equals(register))
+                return new Result<>(false, StatusCode.ERROR,"该手机号手机号已被注册");
+            if (UserCode.CREATE_USER_ERROR_USER_NAME_REPETITION.equals(register))
+                return new Result<>(false, StatusCode.ERROR,"用户名重复，请重试");
+            if (UserCode.CREATE_USER_ERROR_EMAIL_REPETITION.equals(register))
+                return new Result<>(false, StatusCode.ERROR,"该邮箱已被注册，请重试");
+            return new Result(true,StatusCode.OK,"创建成功，请登录");
         }
-        return new Result<>(false, StatusCode.ERROR,"创建错误，请重试");
+        return new Result<>(false, StatusCode.ERROR,"验证码错误");
 
     }
 
     @ApiOperation("用户登录")
     @PostMapping("/login")
-    Result login(@RequestBody String username, String password) {
-        String token = userService.login(username, password);
+    Result login(@RequestBody User user) {
+        String token = userService.login(user.getUsername(), user.getPassword());
+        if(UserCode.LOGIN_USER_ERROR_PASSWORD_FAIL.equals(token))
+            return new Result(false, StatusCode.ERROR, "登陆失败，账户或者密码错误");
+        if (UserCode.LOGIN_USER_ERROR_ACCOUNT_FAIL.equals(token))
+            return new Result(false, StatusCode.ERROR, "登陆失败，该账户已被禁用");
         return new Result(true, StatusCode.OK, "登陆成功", token);
     }
 

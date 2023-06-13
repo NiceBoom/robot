@@ -157,4 +157,25 @@ public class User {
     public void setLastLoginTime(LocalDateTime lastLoginTime) {
         this.lastLoginTime = lastLoginTime;
     }
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "userId='" + userId + '\'' +
+                ", username='" + username + '\'' +
+                ", password='" + password + '\'' +
+                ", email='" + email + '\'' +
+                ", phone='" + phone + '\'' +
+                ", created=" + created +
+                ", updated=" + updated +
+                ", nikeName='" + nikeName + '\'' +
+                ", name='" + name + '\'' +
+                ", status=" + status +
+                ", headPic='" + headPic + '\'' +
+                ", sex=" + sex +
+                ", birthday=" + birthday +
+                ", identity='" + identity + '\'' +
+                ", lastLoginTime=" + lastLoginTime +
+                '}';
+    }
 }
