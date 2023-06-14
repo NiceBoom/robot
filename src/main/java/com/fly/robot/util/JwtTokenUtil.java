@@ -87,8 +87,21 @@ public class JwtTokenUtil {
     }
 
 
+
     /**
-     * 判断token是否已经失效
+     * 验证token是否还有效
+     *
+     * @param token       客户端传入的token
+     * @param user 从数据库中查询出来的用户信息
+     */
+    public boolean validateToken(String token, User user) {
+        String username = getUserNameFromToken(token);
+        return username.equals(user.getUsername()) && !isTokenExpired(token);
+    }
+
+
+    /**
+     * 验证token是否已经失效
      */
     private boolean isTokenExpired(String token) {
         Date expiredDate = getExpiredDateFromToken(token);
@@ -119,26 +132,26 @@ public class JwtTokenUtil {
      * @param oldToken 带tokenHead的token
      */
     public String refreshHeadToken(String oldToken) {
-        if(StrUtil.isEmpty(oldToken)){
+        if (StrUtil.isEmpty(oldToken)) {
             return null;
         }
         String token = oldToken.substring(tokenHead.length());
-        if(StrUtil.isEmpty(token)){
+        if (StrUtil.isEmpty(token)) {
             return null;
         }
         //token校验不通过
         Claims claims = getClaimsFromToken(token);
-        if(claims==null){
+        if (claims == null) {
             return null;
         }
         //如果token已经过期，不支持刷新
-        if(isTokenExpired(token)){
+        if (isTokenExpired(token)) {
             return null;
         }
         //如果token在30分钟之内刚刷新过，返回原token
-        if(tokenRefreshJustBefore(token,30*60)){
+        if (tokenRefreshJustBefore(token, 30 * 60)) {
             return token;
-        }else{
+        } else {
             claims.put(CLAIM_KEY_CREATED, new Date());
             return generateToken(claims);
         }
@@ -146,15 +159,16 @@ public class JwtTokenUtil {
 
     /**
      * 判断token在指定时间内是否刚刚刷新过
+     *
      * @param token 原token
-     * @param time 指定时间（秒）
+     * @param time  指定时间（秒）
      */
     private boolean tokenRefreshJustBefore(String token, int time) {
         Claims claims = getClaimsFromToken(token);
         Date created = claims.get(CLAIM_KEY_CREATED, Date.class);
         Date refreshDate = new Date();
         //刷新时间在创建时间的指定时间内
-        if(refreshDate.after(created)&&refreshDate.before(DateUtil.offsetSecond(created,time))){
+        if (refreshDate.after(created) && refreshDate.before(DateUtil.offsetSecond(created, time))) {
             return true;
         }
         return false;

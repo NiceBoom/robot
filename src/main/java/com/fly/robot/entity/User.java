@@ -37,6 +37,8 @@ public class User {
     private String identity;//身份证号
     @Column(name = "last_login_time")
     private LocalDateTime lastLoginTime;//最后一次登陆时间
+    @Column(name = "permission")
+    private Integer permission;//最后一次登陆时间
 
     public String getUserId() {
         return userId;
@@ -158,6 +160,14 @@ public class User {
         this.lastLoginTime = lastLoginTime;
     }
 
+    public Integer getPermission() {
+        return permission;
+    }
+
+    public void setPermission(Integer permission) {
+        this.permission = permission;
+    }
+
     @Override
     public String toString() {
         return "User{" +
@@ -176,6 +186,7 @@ public class User {
                 ", birthday=" + birthday +
                 ", identity='" + identity + '\'' +
                 ", lastLoginTime=" + lastLoginTime +
+                ", permission=" + permission +
                 '}';
     }
 }

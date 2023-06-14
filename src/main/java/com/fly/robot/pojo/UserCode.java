@@ -10,6 +10,9 @@ public class UserCode {
     public static final Integer ACCOUNT_REGULAR = 0;//账户正常状态 0
     public static final Integer ACCOUNT_FAIL = 1;//账户非正常状态 1
 
+    public static final Integer REGULAR_USER_AUTH = 0;//普通用户权限代码
+    public static final int ADMINISTRATOR_USER_AUTH = 1;//管理员权限代码
+    public static final int SUPER_ADMINISTRATOR_USER_AUTH = 2;//超级管理员权限代码
 
     public static final String LOGIN_USER_ERROR_PASSWORD_FAIL = "2";//密码不正确
     public static final String LOGIN_USER_ERROR_ACCOUNT_FAIL = "3";//账号已被禁用

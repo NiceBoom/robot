@@ -35,6 +35,8 @@ public class UserServiceImpl implements UserService {
     private String accessKeyId; //阿里短信accessKeyId
     @Value("${ali.sms.access-key-secret}")
     private String accessKeySecret; //阿里短信accessKeySecret
+    @Value("${jwt.expiration}")
+    private Long expiration;
     private final static Logger LOGGER = LoggerFactory.getLogger(UserServiceImpl.class);
 
     /**
