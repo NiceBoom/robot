@@ -3,11 +3,11 @@ package com.fly.robot.service.impl;
 import com.alibaba.fastjson.JSONObject;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fly.robot.controller.FlyBookController;
 import com.fly.robot.dao.FlyTokenRepository;
 import com.fly.robot.dto.GetTenantAccessTokenResDTO;
 import com.fly.robot.entity.FlybookToken;
 import com.fly.robot.pojo.FlyBookCode;
-import com.fly.robot.pojo.Result;
 import com.fly.robot.service.FlyBookService;
 import com.fly.robot.service.RedisService;
 import com.fly.robot.util.FastJSONObjectToDto;
@@ -16,6 +16,8 @@ import com.lark.oapi.Client;
 import com.lark.oapi.service.im.v1.model.CreateMessageReq;
 import com.lark.oapi.service.im.v1.model.CreateMessageReqBody;
 import com.lark.oapi.service.im.v1.model.CreateMessageResp;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -37,6 +39,8 @@ public class FlyBookServiceImpl implements FlyBookService {
     private FlyTokenRepository flyTokenRepository;
     @Autowired
     private RedisService redisService;
+
+    private final static Logger LOGGER = LoggerFactory.getLogger(FlyBookServiceImpl.class);
 
     /**
      * 发送默认城市天气到群聊
@@ -87,7 +91,7 @@ public class FlyBookServiceImpl implements FlyBookService {
     /**
      * 发送get请求获取token并存到redis与mysql中
      *
-     * @param tokenType       获取的token类型
+     * @param tokenType 获取的token类型
      * @return data
      */
     private FlybookToken doGetReqGetToken(String tokenType) throws Exception {
@@ -129,7 +133,7 @@ public class FlyBookServiceImpl implements FlyBookService {
      * @throws Exception
      */
     @Override
-    public Result sendWeatherMsgToOpenId(String idType,
+    public void sendWeatherMsgToOpenId(String idType,
                                          String id,
                                          String sendMsgType,
                                          String msg) throws Exception {
@@ -150,9 +154,8 @@ public class FlyBookServiceImpl implements FlyBookService {
                         .build());
 
         if (!resp.success()) {
-            System.out.printf("code:%s,msg:%s,reqId:%s%n"
+            LOGGER.info("code:%s,msg:%s,reqId:%s%n"
                     , resp.getCode(), resp.getMsg(), resp.getRequestId());
         }
-        return null;
     }
 }

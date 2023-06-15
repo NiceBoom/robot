@@ -1,6 +1,5 @@
 package com.fly.robot.service;
 
-import com.fly.robot.pojo.Result;
 
 public interface FlyBookService {
 
@@ -14,7 +13,7 @@ public interface FlyBookService {
      * @return
      * @throws Exception
      */
-    Result sendWeatherMsgToOpenId(String idType, String id, String sendMsgType, String msg) throws Exception;
+    void sendWeatherMsgToOpenId(String idType, String id, String sendMsgType, String msg) throws Exception;
 
     /**
      * 发送天气消息到群聊中

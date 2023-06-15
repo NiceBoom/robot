@@ -1,8 +1,8 @@
 package com.fly.robot.service;
 
 
-import com.fly.robot.entity.AddressAdcode;
 import com.fly.robot.dto.WeatherDTO;
+import com.fly.robot.entity.AddressAdcode;
 
 public interface WeatherService {
 

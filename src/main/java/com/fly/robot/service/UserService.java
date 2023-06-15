@@ -8,27 +8,21 @@ public interface UserService {
      *
      * @param phoneNumber 手机号
      */
-    String sendRegisterMsgAuthCode(String phoneNumber) throws Exception;
+    void sendRegisterMsgAuthCode(String phoneNumber) throws Exception;
 
     /**
      * 使用阿里云短信发送登录短信验证码
      *
      * @param phoneNumber 手机号
      */
-    String sendLoginMsgAuthCode(String phoneNumber) throws Exception;
+    void sendLoginMsgAuthCode(String phoneNumber) throws Exception;
+
+    void phoneRegister(User user, String authCode);
 
     /**
      * 校验验证码
      */
     boolean verifyCode(String phoneNumber, String code);
-
-    /**
-     * 注册
-     *
-     * @param user
-     * @return 创建状态返回代码 UserCode
-     */
-    String register(User user);
 
     /**
      * 用户名密码登录
@@ -41,8 +35,9 @@ public interface UserService {
 
     /**
      * 验证码登录
+     *
      * @param phoneNumber
      * @return
      */
-    String authCodeLogin(String phoneNumber) throws RuntimeException;
+    String authCodeLogin(String phoneNumber);
 }

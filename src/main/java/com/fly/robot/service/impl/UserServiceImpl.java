@@ -46,24 +46,50 @@ public class UserServiceImpl implements UserService {
     private final static Logger LOGGER = LoggerFactory.getLogger(UserServiceImpl.class);
 
     /**
-     * 注册
+     * 使用阿里云短信发送注册账户短信验证码
+     *
+     * @param phoneNumber 手机号
+     */
+    @Override
+    public void sendRegisterMsgAuthCode(String phoneNumber) throws Exception {
+        if (userRepository.findByPhone(phoneNumber) != null)
+            throw new RuntimeException("您的手机号已被注册，请登录");
+        sendAuthCodeMsg(phoneNumber, AliCode.SEND_MSG_REGISTER_MODEL_CODE, getAuthCode(phoneNumber, registerAuthCodeExpiration));
+    }
+
+    /**
+     * 使用阿里云短信发送登录短信验证码
+     *
+     * @param phoneNumber 手机号
+     */
+    @Override
+    public void sendLoginMsgAuthCode(String phoneNumber) throws Exception {
+        if (userRepository.findByPhone(phoneNumber) == null) {
+            throw new RuntimeException("您的手机号还没有注册，请先注册再登录");
+        }
+        sendAuthCodeMsg(phoneNumber, AliCode.SEND_MSG_LOGIN_MODEL_CODE, getAuthCode(phoneNumber, loginAuthCodeExpiration));
+    }
+
+    /**
+     * 手机号注册注册
      *
      * @param user
      * @return
      */
-    public String register(User user) {
-        if (user.getUsername() != null && userRepository.findByUsername(user.getUsername()) != null)
-            return UserCode.CREATE_USER_ERROR_USER_NAME_REPETITION;
-        if (user.getPhone() != null && userRepository.findByPhone(user.getPhone()) != null)
-            return UserCode.CREATE_USER_ERROR_PHONE_NUMBER_REPETITION;
+    @Override
+    public void phoneRegister(User user, String authCode) {
+        if (!verifyCode(user.getPhone(), authCode))
+            throw new RuntimeException("您的验证码不正确，请重新输入");
+        User userByPhone = userRepository.findByPhone(user.getPhone());
+        if (userByPhone != null)
+            throw new RuntimeException("您的手机号已被注册");
+        if (userRepository.findByUsername(user.getUsername()) != null)
+            throw new RuntimeException("您的用户名已被注册");
         if (user.getEmail() != null && userRepository.findByEmail(user.getEmail()) != null)
-            return UserCode.CREATE_USER_ERROR_EMAIL_REPETITION;
-
+            throw new RuntimeException("您的Email已被注册");
         user.setUserId(String.valueOf(new SnowflakeIdUtils(10, 10).nextId()));
         //TODO 添加密码加密算法
-        LOGGER.info("用户信息为" + user.toString());
         userRepository.save(user);
-        return UserCode.CREATE_USER_SUCCESS;
     }
 
     /**
@@ -78,19 +104,20 @@ public class UserServiceImpl implements UserService {
         String token = null;
         User user = userRepository.findByUsername(username);
         if (user == null)
-            return UserCode.LOGIN_USER_ERROR_PASSWORD_FAIL;
-        LOGGER.info("从数据库根据用户名查找的用户信息为：" + user.toString());
+            throw new RuntimeException("用户名不存在，请重试。");
         if (UserCode.ACCOUNT_FAIL.equals(user.getStatus()))
-            return UserCode.LOGIN_USER_ERROR_ACCOUNT_FAIL;
+            throw new RuntimeException("该账户已被禁用，请联系管理员。");
         String password1 = user.getPassword();
+        //TODO 加密密码与校验密码
         if (!password.equals(password1))
-            return UserCode.LOGIN_USER_ERROR_PASSWORD_FAIL;
+            throw new RuntimeException("密码错误，请重试。");
         token = jwtTokenUtil.generateToken(user);
         return token;
     }
 
     /**
      * 验证码登录
+     *
      * @param phoneNumber 手机号
      * @return
      */
@@ -107,40 +134,21 @@ public class UserServiceImpl implements UserService {
         return token;
     }
 
-    /**
-     * 使用阿里云短信发送注册账户短信验证码
-     *
-     * @param phoneNumber 手机号
-     */
-    @Override
-    public String sendRegisterMsgAuthCode(String phoneNumber) throws Exception {
-        if (userRepository.findByPhone(phoneNumber) != null)
-            return UserCode.SEND_REGISTER_AUTH_CODE_FAIL_ACCOUNT_READY;
-        return sendAuthCodeMsg(phoneNumber, AliCode.SEND_MSG_REGISTER_MODEL_CODE);
-    }
-
-    /**
-     * 使用阿里云短信发送登录短信验证码
-     *
-     * @param phoneNumber 手机号
-     */
-    @Override
-    public String sendLoginMsgAuthCode(String phoneNumber) throws Exception {
-        if (userRepository.findByPhone(phoneNumber) == null) {
-            return UserCode.SEND_LOGIN_AUTH_CODE_FAIL_ACCOUNT_NOT_READY;
-        }
-        return sendAuthCodeMsg(phoneNumber, AliCode.SEND_MSG_LOGIN_MODEL_CODE);
-    }
 
     /**
      * 发送验证码
+     *
      * @param phoneNumber 手机号
-     * @param modelCode 短信模板代码
+     * @param modelCode   短信模板代码
      * @return
      * @throws Exception
      */
 
-    private String sendAuthCodeMsg(String phoneNumber, String modelCode) throws Exception {
+    private void sendAuthCodeMsg(String phoneNumber, String modelCode, String authCode) throws Exception {
+        ObjectMapper objectMapper = new ObjectMapper();
+        HashMap<String, String> code = new HashMap<>();
+        code.put("code", authCode);
+
         Config config = new Config()
                 .setAccessKeyId(accessKeyId)
                 .setAccessKeySecret(accessKeySecret)
@@ -148,13 +156,14 @@ public class UserServiceImpl implements UserService {
         Client client = new Client(config);
         SendSmsRequest sendSmsRequest = new SendSmsRequest()
                 .setPhoneNumbers(phoneNumber)
-                .setSignName(AliCode.SEND_MSG_VERIFICATION_CODE_SIGNATURE)
+                .setSignName(AliCode.SEND_MSG_VERIFICATION_CODE_MODEL)
                 .setTemplateCode(modelCode)
-                .setTemplateParam(getAuthCode(phoneNumber));
-        LOGGER.info("发送短信的请求数据为:" + sendSmsRequest.toString());
+                .setTemplateParam(objectMapper.writeValueAsString(code));
         try {
             SendSmsResponse sendSmsResponse = client.sendSmsWithOptions(sendSmsRequest, new RuntimeOptions());
-            LOGGER.info(sendSmsResponse.toString());
+            if (sendSmsResponse.getStatusCode() != 200)
+                throw new RuntimeException("发送短信失败，请检查第三方短信服务接口:" + sendSmsResponse.getBody().getMessage());
+            LOGGER.info("发送阿里云短信三方接口返回的消息提示：" + sendSmsResponse.getBody().getMessage());
         } catch (TeaException error) {
             LOGGER.info(error.message);
             com.aliyun.teautil.Common.assertAsString(error.message);
@@ -163,7 +172,6 @@ public class UserServiceImpl implements UserService {
             LOGGER.info(error.message);
             com.aliyun.teautil.Common.assertAsString(error.message);
         }
-        return UserCode.SEND_AUTH_CODE_MSG_SUCCESS;
     }
 
     /**
@@ -172,7 +180,7 @@ public class UserServiceImpl implements UserService {
      * @param phoneNumber 手机号
      * @return
      */
-    private String getAuthCode(String phoneNumber) {
+    private String getAuthCode(String phoneNumber, Long expire) {
         String authCode = redisService.get(phoneNumber);
         if (authCode != null) {
             return authCode;
@@ -180,7 +188,7 @@ public class UserServiceImpl implements UserService {
         Random random = new Random();
         int code = random.nextInt(900000) + 100000;
         redisService.set(phoneNumber, String.valueOf(code));
-        redisService.expire(phoneNumber, 15 * 60);
+        redisService.expire(phoneNumber, expire);
         return String.valueOf(code);
     }
 

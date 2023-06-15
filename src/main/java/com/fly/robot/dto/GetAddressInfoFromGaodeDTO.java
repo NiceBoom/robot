@@ -1,6 +1,5 @@
 package com.fly.robot.dto;
 
-import java.util.ArrayList;
 import java.util.List;
 
 //这是根据地址从高德API接口获取到的详细地理数据的DTO

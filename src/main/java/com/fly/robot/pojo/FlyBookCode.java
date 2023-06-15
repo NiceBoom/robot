@@ -28,7 +28,6 @@ public class FlyBookCode {
     public static final String MSG_RECEIVE_ID_TYPE_CHAT_ID = "chat_id";
 
 
-
     public static final String SEND_MSG_TEXT_TYPE = "text";
 
 
@@ -37,7 +36,6 @@ public class FlyBookCode {
             "您发送的天气消息有误，请重试。可识别的查询格式为：城市，天气类型，天气。" +
                     "其中城市为您想查询的城市名称，天气类型为实时或者未来，实时查询的是当前天气预报，未来查询的是未来几天天气预报，最后一项天气为识别码" +
                     "例：北京，未来，天气。查询的是北京未来几天天气预报";
-
 
 
     public static final String YANG_GUANG_OPEN_ID = "ou_43204aba97d7eae211a3dac2e68e4a78";

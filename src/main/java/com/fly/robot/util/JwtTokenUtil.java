@@ -87,12 +87,11 @@ public class JwtTokenUtil {
     }
 
 
-
     /**
      * 验证token是否还有效
      *
-     * @param token       客户端传入的token
-     * @param user 从数据库中查询出来的用户信息
+     * @param token 客户端传入的token
+     * @param user  从数据库中查询出来的用户信息
      */
     public boolean validateToken(String token, User user) {
         String username = getUserNameFromToken(token);

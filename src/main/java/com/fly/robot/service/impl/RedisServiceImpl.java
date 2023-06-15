@@ -28,12 +28,17 @@ public class RedisServiceImpl implements RedisService {
     }
 
     @Override
+    public Long getExpire(String key) {
+        return stringRedisTemplate.getExpire(key);
+    }
+
+    @Override
     public void remove(String key) {
         stringRedisTemplate.delete(key);
     }
 
     @Override
     public Long increment(String key, long delta) {
-        return stringRedisTemplate.opsForValue().increment(key,delta);
+        return stringRedisTemplate.opsForValue().increment(key, delta);
     }
 }

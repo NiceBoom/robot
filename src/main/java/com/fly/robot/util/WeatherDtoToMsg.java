@@ -1,8 +1,7 @@
 package com.fly.robot.util;
 
-import com.fly.robot.pojo.FlyBookCode;
-
 import com.fly.robot.dto.WeatherDTO;
+import com.fly.robot.pojo.FlyBookCode;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;

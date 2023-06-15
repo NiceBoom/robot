@@ -10,16 +10,16 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
  */
 public class FastJSONObjectToDto {
 
-    public static <T> T conversion(JSONObject fastJSONObject, Class<T> dtoClass) throws Exception{
+    public static <T> T conversion(JSONObject fastJSONObject, Class<T> dtoClass) throws Exception {
         ObjectMapper objectMapper = new ObjectMapper();
 
         String jsonString = fastJSONObject.toJSONString();
         JsonNode jsonNode = null;
-            jsonNode = objectMapper.readTree(jsonString);
-            ObjectNode jsonObject = objectMapper.createObjectNode();
-            jsonObject.setAll((ObjectNode) jsonNode);
+        jsonNode = objectMapper.readTree(jsonString);
+        ObjectNode jsonObject = objectMapper.createObjectNode();
+        jsonObject.setAll((ObjectNode) jsonNode);
 
-            return objectMapper.readValue(jsonObject.toString(), dtoClass);
+        return objectMapper.readValue(jsonObject.toString(), dtoClass);
     }
 
 }
