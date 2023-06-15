@@ -2,6 +2,7 @@ package com.fly.robot.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fly.robot.annotation.JwtAuthenticated;
 import com.fly.robot.dto.GetFlyBookMsgReceiveDTO;
 import com.fly.robot.dto.WeatherDTO;
 import com.fly.robot.entity.*;
@@ -26,9 +27,9 @@ import java.util.Map;
 @RestController
 @RequestMapping("/flyBook")
 @EnableScheduling
-@Api(tags = "FlyBookController")
 @Component
 @Slf4j
+@Api(tags = "FlyBookController", description = "飞书接口")
 public class FlyBookController {
     @Autowired
     private FlyBookService flyBookService;
@@ -40,7 +41,7 @@ public class FlyBookController {
     //发送默认城市实时天气数据消息
     //每天早八点35，每隔一小时发一次，一直到晚上21.30 发送实时天气数据
     //或者也可以手动发送
-    @ApiOperation("发送实时天气消息")
+    @ApiOperation("发送默认城市实时天气消息")
     @Scheduled(cron = "0 35 8,9,10,11,12,13,14,15,16,17,18,19,20,21 * * ? ")
     @PostMapping("/sendLiveWeatherMsg")
     String sendLiveWeatherMsg() throws Exception {
@@ -54,6 +55,7 @@ public class FlyBookController {
     //发送默认城市未来天气预报情况
     //每天9:00、10:00、12:00、13:00、19:00、20:00自动发送未来的天气预报
     //或者也可以手动发送
+    @ApiOperation("发送默认城市未来天气消息")
     @Scheduled(cron = "0 10 9,10,12,13,19,20 * * ? ")
     @PostMapping("/sendForecastWeatherMsg")
     String sendForecastWeatherMsg() throws Exception {
@@ -66,18 +68,16 @@ public class FlyBookController {
     /**
      * 接收查询人的消息并返回相应的天气消息
      *
-     * @param flyBookMsgReceiveString
+     * @param flyBookMsgReceiveDTO
      * @return
      * @throws Exception
      */
+    @ApiOperation("接收查询人的消息并返回相应的天气消息")
     @PostMapping("/feishuRobotReceiveMessageProcess")
-    void feishuRobotReceiveMessageProcess(@RequestBody String flyBookMsgReceiveString) throws Exception {
+    void feishuRobotReceiveMessageProcess(@RequestBody GetFlyBookMsgReceiveDTO flyBookMsgReceiveDTO) throws Exception {
         //TODO 校验推送类型
-        System.out.println("飞书推送的消息: " + flyBookMsgReceiveString);
-
+        LOGGER.info("飞书推送的请求消息：" + flyBookMsgReceiveDTO.toString());
         ObjectMapper objectMapper = new ObjectMapper();
-        GetFlyBookMsgReceiveDTO flyBookMsgReceiveDTO = objectMapper.readValue(flyBookMsgReceiveString, GetFlyBookMsgReceiveDTO.class);
-
         String openId = flyBookMsgReceiveDTO.getEvent().getSender().getSender_id().getOpen_id();
         String msgContent = flyBookMsgReceiveDTO.getEvent().getMessage().getContent();
         Map<String, String> contentMap = objectMapper.readValue(msgContent, new TypeReference<Map<String, String>>() {

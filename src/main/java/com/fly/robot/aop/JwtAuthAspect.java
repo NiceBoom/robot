@@ -11,10 +11,8 @@ import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.annotation.Before;
 import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
-import org.junit.platform.commons.util.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -33,7 +31,7 @@ public class JwtAuthAspect {
     private UserRepository userRepository;
 
 
-    @Pointcut("@annotation(com.fly.robot.annotation.JwtAuthenticated)")
+    @Pointcut("@annotation(com.fly.robot.annotation.JwtAuthenticated) || @within(com.fly.robot.annotation.JwtAuthenticated)")
     public void authPointcut() {
     }
 

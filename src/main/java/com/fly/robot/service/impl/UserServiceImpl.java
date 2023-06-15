@@ -4,6 +4,7 @@ import com.aliyun.dysmsapi20170525.Client;
 import com.aliyun.dysmsapi20170525.models.SendSmsRequest;
 import com.aliyun.dysmsapi20170525.models.SendSmsResponse;
 import com.aliyun.tea.TeaException;
+import com.aliyun.teaopenapi.models.Config;
 import com.aliyun.teautil.models.RuntimeOptions;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fly.robot.dao.UserRepository;
@@ -32,11 +33,16 @@ public class UserServiceImpl implements UserService {
     @Autowired
     private RedisService redisService;
     @Value("${ali.sms.access-key-id}")
-    private String accessKeyId; //阿里短信accessKeyId
+    private String accessKeyId;
     @Value("${ali.sms.access-key-secret}")
-    private String accessKeySecret; //阿里短信accessKeySecret
-    @Value("${jwt.expiration}")
-    private Long expiration;
+    private String accessKeySecret;
+
+    @Value("${ali.msg-auth-code-expire.login}")
+    private Long loginAuthCodeExpiration;
+    @Value("${ali.msg-auth-code-expire.register}")
+    private Long registerAuthCodeExpiration;
+    @Value("${ali.sms.send-msg-code-address}")
+    private String sendMsgCodeAddress;
     private final static Logger LOGGER = LoggerFactory.getLogger(UserServiceImpl.class);
 
     /**
@@ -61,14 +67,14 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
-     * 登录
+     * 用户名密码登录
      *
      * @param username 用户名
      * @param password 密码
      * @return jwtToken
      */
     @Override
-    public String login(String username, String password) {
+    public String userLogin(String username, String password) {
         String token = null;
         User user = userRepository.findByUsername(username);
         if (user == null)
@@ -84,27 +90,70 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
-     * 发送验证码
-     *
+     * 验证码登录
      * @param phoneNumber 手机号
-     * @throws Exception
+     * @return
      */
     @Override
-    public void sendAuthCode(String phoneNumber) throws Exception {
+    public String authCodeLogin(String phoneNumber) {
+        String token = null;
+        User user = userRepository.findByPhone(phoneNumber);
+        if (user == null)
+            throw new RuntimeException("该用户不存在，检验手机号");
+        LOGGER.info("从数据库根据用户名查找的用户信息为：" + user.toString());
+        if (UserCode.ACCOUNT_FAIL.equals(user.getStatus()))
+            throw new RuntimeException("您的账户已被封禁");
+        token = jwtTokenUtil.generateToken(user);
+        return token;
+    }
 
-        ObjectMapper objectMapper = new ObjectMapper();
-        HashMap<String, String> code = new HashMap<>();
-        code.put("code", getCode(phoneNumber));
-        Client client = createClient(accessKeyId, accessKeySecret);
-        SendSmsRequest sendSmsRequest = new com.aliyun.dysmsapi20170525.models.SendSmsRequest()
+    /**
+     * 使用阿里云短信发送注册账户短信验证码
+     *
+     * @param phoneNumber 手机号
+     */
+    @Override
+    public String sendRegisterMsgAuthCode(String phoneNumber) throws Exception {
+        if (userRepository.findByPhone(phoneNumber) != null)
+            return UserCode.SEND_REGISTER_AUTH_CODE_FAIL_ACCOUNT_READY;
+        return sendAuthCodeMsg(phoneNumber, AliCode.SEND_MSG_REGISTER_MODEL_CODE);
+    }
+
+    /**
+     * 使用阿里云短信发送登录短信验证码
+     *
+     * @param phoneNumber 手机号
+     */
+    @Override
+    public String sendLoginMsgAuthCode(String phoneNumber) throws Exception {
+        if (userRepository.findByPhone(phoneNumber) == null) {
+            return UserCode.SEND_LOGIN_AUTH_CODE_FAIL_ACCOUNT_NOT_READY;
+        }
+        return sendAuthCodeMsg(phoneNumber, AliCode.SEND_MSG_LOGIN_MODEL_CODE);
+    }
+
+    /**
+     * 发送验证码
+     * @param phoneNumber 手机号
+     * @param modelCode 短信模板代码
+     * @return
+     * @throws Exception
+     */
+
+    private String sendAuthCodeMsg(String phoneNumber, String modelCode) throws Exception {
+        Config config = new Config()
+                .setAccessKeyId(accessKeyId)
+                .setAccessKeySecret(accessKeySecret)
+                .setEndpoint(sendMsgCodeAddress);
+        Client client = new Client(config);
+        SendSmsRequest sendSmsRequest = new SendSmsRequest()
                 .setPhoneNumbers(phoneNumber)
-                .setSignName(AliCode.SEND_MSG_VERIFICATION_CODE_SIGNATURE)//签名代码
-                .setTemplateCode(AliCode.SEND_MSG_VERIFICATION_CODE_MODEL)//模板代码
-                .setTemplateParam(objectMapper.writeValueAsString(code));//手机号
+                .setSignName(AliCode.SEND_MSG_VERIFICATION_CODE_SIGNATURE)
+                .setTemplateCode(modelCode)
+                .setTemplateParam(getAuthCode(phoneNumber));
         LOGGER.info("发送短信的请求数据为:" + sendSmsRequest.toString());
         try {
             SendSmsResponse sendSmsResponse = client.sendSmsWithOptions(sendSmsRequest, new RuntimeOptions());
-            LOGGER.info("发送短信的请求返回的响应为为:" + sendSmsResponse.toString());
             LOGGER.info(sendSmsResponse.toString());
         } catch (TeaException error) {
             LOGGER.info(error.message);
@@ -114,15 +163,7 @@ public class UserServiceImpl implements UserService {
             LOGGER.info(error.message);
             com.aliyun.teautil.Common.assertAsString(error.message);
         }
-    }
-
-    //使用AK&SK初始化账号client
-    private Client createClient(String accessKeyId, String accessKeySecret) throws Exception {
-        com.aliyun.teaopenapi.models.Config config = new com.aliyun.teaopenapi.models.Config()
-                .setAccessKeyId(accessKeyId)
-                .setAccessKeySecret(accessKeySecret);
-        config.endpoint = "dysmsapi.aliyuncs.com";
-        return new com.aliyun.dysmsapi20170525.Client(config);
+        return UserCode.SEND_AUTH_CODE_MSG_SUCCESS;
     }
 
     /**
@@ -131,7 +172,7 @@ public class UserServiceImpl implements UserService {
      * @param phoneNumber 手机号
      * @return
      */
-    private String getCode(String phoneNumber) {
+    private String getAuthCode(String phoneNumber) {
         String authCode = redisService.get(phoneNumber);
         if (authCode != null) {
             return authCode;
