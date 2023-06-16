@@ -104,10 +104,7 @@ public class UserController {
 
     @ApiOperation("查找个人用户信息")
     @PostMapping("/findUserInfoByToken")
-    @JwtAuthenticated(value =
-            {UserCode.REGULAR_USER_AUTH,
-                    UserCode.ADMINISTRATOR_USER_AUTH,
-                    UserCode.SUPER_ADMINISTRATOR_USER_AUTH})
+    @JwtAuthenticated(value = {UserCode.REGULAR_USER_AUTH, UserCode.ADMINISTRATOR_USER_AUTH, UserCode.SUPER_ADMINISTRATOR_USER_AUTH})
     CommonResult findUserInfoByToken(@RequestHeader("Authorization") String token) {
         try {
             return CommonResult.success(userService.findUserInfoByToken(token));

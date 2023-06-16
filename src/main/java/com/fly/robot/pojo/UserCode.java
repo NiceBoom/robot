@@ -15,7 +15,7 @@ public class UserCode {
 
 
     //权限代码
-    public static final Integer REGULAR_USER_AUTH = 0;//普通用户权限代码
+    public static final int REGULAR_USER_AUTH = 0;//普通用户权限代码
     public static final int ADMINISTRATOR_USER_AUTH = 1;//管理员权限代码
     public static final int SUPER_ADMINISTRATOR_USER_AUTH = 2;//超级管理员权限代码
 

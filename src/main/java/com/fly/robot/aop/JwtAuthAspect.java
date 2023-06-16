@@ -26,7 +26,6 @@ public class JwtAuthAspect {
     @Autowired
     private UserRepository userRepository;
 
-
     @Pointcut("@annotation(com.fly.robot.annotation.JwtAuthenticated) || @within(com.fly.robot.annotation.JwtAuthenticated)")
     public void authPointcut() {
     }
