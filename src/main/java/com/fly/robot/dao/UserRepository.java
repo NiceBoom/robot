@@ -10,6 +10,7 @@ import javax.transaction.Transactional;
 import java.sql.Date;
 import java.time.LocalDateTime;
 
+@Transactional
 public interface UserRepository extends JpaRepository<User, String> {
     User findByUsername(String username);
 
@@ -17,7 +18,6 @@ public interface UserRepository extends JpaRepository<User, String> {
 
     User findByEmail(String email);
 
-    @Transactional
     @Modifying
     @Query("update User u set u.lastLoginTime = :lastLoginTime where u.userId = :userId")
     void updateLastLoginTime(@Param("userId") String userId, @Param("lastLoginTime") LocalDateTime lastLoginTime);

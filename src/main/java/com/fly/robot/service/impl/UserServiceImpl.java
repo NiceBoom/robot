@@ -9,6 +9,8 @@ import com.aliyun.teautil.models.RuntimeOptions;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fly.robot.dao.UserRepository;
 import com.fly.robot.dto.PhoneRegisterParam;
+import com.fly.robot.dto.UpdateUserInfoParam;
+import com.fly.robot.dto.UserInfoResultDTO;
 import com.fly.robot.entity.User;
 import com.fly.robot.pojo.AliCode;
 import com.fly.robot.pojo.UserCode;
@@ -80,19 +82,19 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("您的验证码不正确，请重新输入");
         User userByPhone = userRepository.findByPhone(phoneRegisterParam.getPhone());
         if (userByPhone != null)
-            throw new RuntimeException("您的手机号已被注册");
-        if (userRepository.findByUsername(phoneRegisterParam.getUsername()) != null)
-            throw new RuntimeException("您的用户名已被注册");
-        if (userRepository.findByEmail(phoneRegisterParam.getEmail()) != null)
-            throw new RuntimeException("您的Email已被注册");
+            throw new RuntimeException("您的手机号已被注册，请登录");
         User user = new User();
-        BeanUtils.copyProperties(phoneRegisterParam,user,"authCode");
+        BeanUtils.copyProperties(phoneRegisterParam, user, "authCode");
         user.setUserId(String.valueOf(new SnowflakeIdUtils(10, 10).nextId()));
         LocalDateTime nowTime = LocalDateTime.now();
         user.setCreated(nowTime);
         user.setUpdated(nowTime);
-        if (user.getUsername() == null)
-            user.setNikeName(user.getUsername());
+        String userName = "匿名用户" + new SnowflakeIdUtils(2, 3).nextId();
+        while (userRepository.findByUsername(userName) != null) {
+            userName = "匿名用户" + new SnowflakeIdUtils(2, 3).nextId();
+        }
+        user.setUsername(userName);
+        user.setNikeName(userName);
         user.setStatus(UserCode.USER_STATUS_ENABLE);
         redisService.remove(phoneRegisterParam.getPhone());
         //TODO 添加密码加密算法
@@ -119,7 +121,7 @@ public class UserServiceImpl implements UserService {
         if (!password.equals(password1))
             throw new RuntimeException("密码错误，请重试。");
         token = jwtTokenUtil.generateToken(user);
-        userRepository.updateLastLoginTime(user.getUserId(),LocalDateTime.now());
+        userRepository.updateLastLoginTime(user.getUserId(), LocalDateTime.now());
         return token;
     }
 
@@ -139,11 +141,40 @@ public class UserServiceImpl implements UserService {
         if (UserCode.USER_STATUS_DISABLE.equals(user.getStatus()))
             throw new RuntimeException("您的账户已被封禁");
         token = jwtTokenUtil.generateToken(user);
-        userRepository.updateLastLoginTime(user.getUserId(),LocalDateTime.now());
+        userRepository.updateLastLoginTime(user.getUserId(), LocalDateTime.now());
         redisService.remove(phone);
         return token;
     }
 
+    //根据token获取用户信息
+    @Override
+    public UserInfoResultDTO findUserInfoByToken(String token) {
+        String username = jwtTokenUtil.getUserNameFromToken(token);
+        User user = userRepository.findByUsername(username);
+        if (user != null) {
+            if (jwtTokenUtil.validateToken(token, user)) {
+                UserInfoResultDTO userInfoResultDTO = new UserInfoResultDTO();
+                BeanUtils.copyProperties(user, userInfoResultDTO);
+                return userInfoResultDTO;
+            }
+            throw new RuntimeException("您的登录已过期，请重新登陆");
+        }
+        throw new RuntimeException("您的登录已过期，请重新登陆");
+    }
+
+    @Override
+    public void updateUserInfo(UpdateUserInfoParam updateUserInfoParam, String token) {
+        String username = jwtTokenUtil.getUserNameFromToken(token);
+        User user = userRepository.findByUsername(username);
+        if (user != null) {
+            if (jwtTokenUtil.validateToken(token, user)) {
+                BeanUtils.copyProperties(updateUserInfoParam, user);
+                userRepository.save(user);
+            }
+            throw new RuntimeException("您的登录已过期，请重新登陆");
+        }
+        throw new RuntimeException("您的登录已过期，请重新登陆");
+    }
 
     /**
      * 发送验证码

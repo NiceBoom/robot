@@ -1,46 +1,28 @@
 package com.fly.robot.dto;
 
+import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Getter;
 import lombok.Setter;
 
-import javax.validation.constraints.Email;
 import javax.validation.constraints.NotEmpty;
-import java.time.LocalDateTime;
+import javax.validation.constraints.Pattern;
 
 /**
  * 用户注册DTO
  */
 @Getter
 @Setter
+@ApiModel("手机号验证码注册")
 public class PhoneRegisterParam {
-    @NotEmpty
-    @ApiModelProperty(value = "用户名", required = true)
-    private String username;
-    @NotEmpty
-    @ApiModelProperty(value = "密码", required = true)
-    private String password;
-    @Email
-    @ApiModelProperty(value = "邮箱", required = true)
-    private String email;
-    @NotEmpty
-    @ApiModelProperty(value = "用户手机号", required = true)
+
+    @NotEmpty(message = "手机号不能为空")
+    @Pattern(regexp = "^1[3456789]\\d{9}$", message = "手机号格式不正确，请重试。")
+    @ApiModelProperty(value = "手机号", required = true)
     private String phone;
-    @ApiModelProperty(value = "用户昵称")
-    private String nikeName;
-    @ApiModelProperty(value = "用户性别", required = true, notes = "默认0未知，1男，2女")
-    private Integer sex;
-    @ApiModelProperty(value = "用户生日")
-    private LocalDateTime birthday;
-    @NotEmpty
-    @ApiModelProperty(value = "真实姓名", required = true)
-    private String name;
-    @NotEmpty
-    @ApiModelProperty(value = "身份证号", required = true)
-    private String identity;
-    @ApiModelProperty(value = "用户权限", required = true, notes = "0普通账户，1管理员，2超级管理员")
-    private Integer permission;
-    @NotEmpty
-    @ApiModelProperty(value = "验证码", required = true)
+
+    @NotEmpty(message = "验证码不能为空")
+    @Pattern(regexp = "^\\d{6}$", message = "验证码格式不正确，请重试。")
+    @ApiModelProperty(value = "验证码，6位数字", required = true)
     private String authCode;
 }

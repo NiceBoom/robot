@@ -1,6 +1,9 @@
 package com.fly.robot.service;
 
 import com.fly.robot.dto.PhoneRegisterParam;
+import com.fly.robot.dto.UpdateUserInfoParam;
+import com.fly.robot.dto.UserInfoResultDTO;
+import com.fly.robot.entity.User;
 
 public interface UserService {
     /**
@@ -19,25 +22,20 @@ public interface UserService {
 
     void phoneRegister(PhoneRegisterParam phoneRegisterParam);
 
-    /**
-     * 校验验证码
-     */
+
+    //校验验证码
     boolean verifyCode(String phoneNumber, String code);
 
-    /**
-     * 用户名密码登录
-     *
-     * @param username 用户名
-     * @param password 密码
-     * @return jwtToken
-     */
+
+    //用户名密码登录
     String userLogin(String username, String password);
 
-    /**
-     * 验证码登录
-     *
-     * @param phoneNumber
-     * @return
-     */
+    //验证码登录
     String authCodeLogin(String phoneNumber);
+
+    //根据token查询该用户信息
+    UserInfoResultDTO findUserInfoByToken(String token);
+
+    //更新用户信息
+    void updateUserInfo(UpdateUserInfoParam updateUserInfoParam, String token);
 }
