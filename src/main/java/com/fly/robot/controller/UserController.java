@@ -3,6 +3,9 @@ package com.fly.robot.controller;
 import com.fly.robot.annotation.JwtAuthenticated;
 import com.fly.robot.api.CommonResult;
 import com.fly.robot.dao.UserRepository;
+import com.fly.robot.dto.PhoneLoginParam;
+import com.fly.robot.dto.PhoneRegisterParam;
+import com.fly.robot.dto.UserLoginParam;
 import com.fly.robot.entity.User;
 import com.fly.robot.pojo.UserCode;
 import com.fly.robot.service.UserService;
@@ -56,25 +59,12 @@ public class UserController {
         return CommonResult.success("发送验证码成功！");
     }
 
-    /**
-     * 手机号注册用户，手机号必填否则无法请求
-     *
-     * @param user
-     * @param authCode
-     * @return
-     */
+
     @ApiOperation("手机号注册用户")
     @PostMapping("/phoneRegister")
-    CommonResult phoneRegister(@RequestBody User user, @RequestParam("authCode") String authCode) {
-        //校验数据是否合格
-        if (user.getPhone() == null || !Utils.isChinaPhoneNumber(user.getPhone()))
-            return CommonResult.failed("请输入正确的手机号");
-        if (user.getUsername() == null)
-            return CommonResult.failed("用户名不能为空");
-        if (authCode == null)
-            return CommonResult.failed("请填入您的验证码");
+    CommonResult phoneRegister(@RequestBody PhoneRegisterParam phoneRegisterParam) {
         try {
-            userService.phoneRegister(user, authCode);
+            userService.phoneRegister(phoneRegisterParam);
         } catch (Exception e) {
             return CommonResult.failed(e.getMessage());
         }
@@ -83,27 +73,21 @@ public class UserController {
 
     @ApiOperation("用户名密码登录")
     @PostMapping("/userLogin")
-    CommonResult login(@RequestBody User user) {
-        if (user.getUsername() == null)
-            return CommonResult.failed("用户名不能为空");
-        if (user.getPassword() == null)
-            return CommonResult.failed("密码不能为空");
-
+    CommonResult login(@RequestBody UserLoginParam userLoginParam) {
         try {
-            return CommonResult.success(userService.userLogin(user.getUsername(), user.getPassword()));
+            return CommonResult.success(userService.userLogin(userLoginParam.getUsername(), userLoginParam.getPassword()));
         } catch (Exception e) {
             return CommonResult.failed(e.getMessage());
         }
-
     }
 
     @ApiOperation("验证码登录")
     @PostMapping("/authCodeLogin")
-    CommonResult authCodeLogin(@RequestParam("phone") String phone, @RequestParam("authCode") String authCode) {
-        if (!userService.verifyCode(phone, authCode))
+    CommonResult authCodeLogin(@RequestBody PhoneLoginParam phoneLoginParam) {
+        if (!userService.verifyCode(phoneLoginParam.getPhone(), phoneLoginParam.getAuthCode()))
             return CommonResult.failed("验证码错误，请重试。");
         try {
-            return CommonResult.success(userService.authCodeLogin(phone));
+            return CommonResult.success(userService.authCodeLogin(phoneLoginParam.getPhone()));
         } catch (Exception e) {
             return CommonResult.failed(e.getMessage());
         }

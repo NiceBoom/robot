@@ -3,7 +3,7 @@ package com.fly.robot.controller;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fly.robot.api.CommonResult;
-import com.fly.robot.dto.GetFlyBookMsgReceiveDTO;
+import com.fly.robot.dto.GetFlyBookMsgReceiveParam;
 import com.fly.robot.dto.WeatherDTO;
 import com.fly.robot.entity.AddressAdcode;
 import com.fly.robot.pojo.FlyBookCode;
@@ -88,7 +88,7 @@ public class FlyBookController {
      */
     @ApiOperation("接收查询人的消息并返回相应的天气消息")
     @PostMapping("/feishuRobotReceiveMessageProcess")
-    CommonResult feishuRobotReceiveMessageProcess(@RequestBody GetFlyBookMsgReceiveDTO flyBookMsgReceiveDTO) {
+    CommonResult feishuRobotReceiveMessageProcess(@RequestBody GetFlyBookMsgReceiveParam flyBookMsgReceiveDTO) {
         try {
             //TODO 校验推送类型
             LOGGER.info("飞书推送的请求消息：" + flyBookMsgReceiveDTO.toString());

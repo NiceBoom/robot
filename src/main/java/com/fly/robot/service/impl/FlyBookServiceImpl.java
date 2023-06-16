@@ -3,7 +3,6 @@ package com.fly.robot.service.impl;
 import com.alibaba.fastjson.JSONObject;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.fly.robot.controller.FlyBookController;
 import com.fly.robot.dao.FlyTokenRepository;
 import com.fly.robot.dto.GetTenantAccessTokenResDTO;
 import com.fly.robot.entity.FlybookToken;

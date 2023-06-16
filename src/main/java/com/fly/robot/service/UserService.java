@@ -1,6 +1,6 @@
 package com.fly.robot.service;
 
-import com.fly.robot.entity.User;
+import com.fly.robot.dto.PhoneRegisterParam;
 
 public interface UserService {
     /**
@@ -17,7 +17,7 @@ public interface UserService {
      */
     void sendLoginMsgAuthCode(String phoneNumber) throws Exception;
 
-    void phoneRegister(User user, String authCode);
+    void phoneRegister(PhoneRegisterParam phoneRegisterParam);
 
     /**
      * 校验验证码

@@ -1,8 +1,6 @@
 package com.fly.robot.controller;
 
 import com.fly.robot.api.CommonResult;
-import com.fly.robot.dao.WeatherRepository;
-import com.fly.robot.dto.WeatherDTO;
 import com.fly.robot.pojo.GaodeCode;
 import com.fly.robot.service.WeatherService;
 import io.swagger.annotations.Api;

@@ -8,6 +8,7 @@ import com.aliyun.teaopenapi.models.Config;
 import com.aliyun.teautil.models.RuntimeOptions;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fly.robot.dao.UserRepository;
+import com.fly.robot.dto.PhoneRegisterParam;
 import com.fly.robot.entity.User;
 import com.fly.robot.pojo.AliCode;
 import com.fly.robot.pojo.UserCode;
@@ -17,10 +18,12 @@ import com.fly.robot.util.JwtTokenUtil;
 import com.fly.robot.util.SnowflakeIdUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Random;
 
@@ -70,24 +73,28 @@ public class UserServiceImpl implements UserService {
         sendAuthCodeMsg(phoneNumber, AliCode.SEND_MSG_LOGIN_MODEL_CODE, getAuthCode(phoneNumber, loginAuthCodeExpiration));
     }
 
-    /**
-     * 手机号注册注册
-     *
-     * @param user
-     * @return
-     */
+    //手机号注册
     @Override
-    public void phoneRegister(User user, String authCode) {
-        if (!verifyCode(user.getPhone(), authCode))
+    public void phoneRegister(PhoneRegisterParam phoneRegisterParam) {
+        if (!verifyCode(phoneRegisterParam.getPhone(), phoneRegisterParam.getAuthCode()))
             throw new RuntimeException("您的验证码不正确，请重新输入");
-        User userByPhone = userRepository.findByPhone(user.getPhone());
+        User userByPhone = userRepository.findByPhone(phoneRegisterParam.getPhone());
         if (userByPhone != null)
             throw new RuntimeException("您的手机号已被注册");
-        if (userRepository.findByUsername(user.getUsername()) != null)
+        if (userRepository.findByUsername(phoneRegisterParam.getUsername()) != null)
             throw new RuntimeException("您的用户名已被注册");
-        if (user.getEmail() != null && userRepository.findByEmail(user.getEmail()) != null)
+        if (userRepository.findByEmail(phoneRegisterParam.getEmail()) != null)
             throw new RuntimeException("您的Email已被注册");
+        User user = new User();
+        BeanUtils.copyProperties(phoneRegisterParam,user,"authCode");
         user.setUserId(String.valueOf(new SnowflakeIdUtils(10, 10).nextId()));
+        LocalDateTime nowTime = LocalDateTime.now();
+        user.setCreated(nowTime);
+        user.setUpdated(nowTime);
+        if (user.getUsername() == null)
+            user.setNikeName(user.getUsername());
+        user.setStatus(UserCode.USER_STATUS_ENABLE);
+        redisService.remove(phoneRegisterParam.getPhone());
         //TODO 添加密码加密算法
         userRepository.save(user);
     }
@@ -105,32 +112,35 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findByUsername(username);
         if (user == null)
             throw new RuntimeException("用户名不存在，请重试。");
-        if (UserCode.ACCOUNT_FAIL.equals(user.getStatus()))
+        if (UserCode.USER_STATUS_DISABLE.equals(user.getStatus()))
             throw new RuntimeException("该账户已被禁用，请联系管理员。");
         String password1 = user.getPassword();
         //TODO 加密密码与校验密码
         if (!password.equals(password1))
             throw new RuntimeException("密码错误，请重试。");
         token = jwtTokenUtil.generateToken(user);
+        userRepository.updateLastLoginTime(user.getUserId(),LocalDateTime.now());
         return token;
     }
 
     /**
      * 验证码登录
      *
-     * @param phoneNumber 手机号
+     * @param phone 手机号
      * @return
      */
     @Override
-    public String authCodeLogin(String phoneNumber) {
+    public String authCodeLogin(String phone) {
         String token = null;
-        User user = userRepository.findByPhone(phoneNumber);
+        User user = userRepository.findByPhone(phone);
         if (user == null)
             throw new RuntimeException("该用户不存在，检验手机号");
         LOGGER.info("从数据库根据用户名查找的用户信息为：" + user.toString());
-        if (UserCode.ACCOUNT_FAIL.equals(user.getStatus()))
+        if (UserCode.USER_STATUS_DISABLE.equals(user.getStatus()))
             throw new RuntimeException("您的账户已被封禁");
         token = jwtTokenUtil.generateToken(user);
+        userRepository.updateLastLoginTime(user.getUserId(),LocalDateTime.now());
+        redisService.remove(phone);
         return token;
     }
 
@@ -156,7 +166,7 @@ public class UserServiceImpl implements UserService {
         Client client = new Client(config);
         SendSmsRequest sendSmsRequest = new SendSmsRequest()
                 .setPhoneNumbers(phoneNumber)
-                .setSignName(AliCode.SEND_MSG_VERIFICATION_CODE_MODEL)
+                .setSignName(AliCode.SEND_MSG_VERIFICATION_CODE_SIGNATURE)
                 .setTemplateCode(modelCode)
                 .setTemplateParam(objectMapper.writeValueAsString(code));
         try {

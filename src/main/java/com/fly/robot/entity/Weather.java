@@ -1,10 +1,13 @@
 package com.fly.robot.entity;
 
+import lombok.Data;
+
 import javax.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "tb_weather")
+@Data
 public class Weather {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -29,63 +32,4 @@ public class Weather {
     //创建时间
     @Column(name = "create_at")
     private LocalDateTime createAt;
-
-    public Weather() {
-    }
-
-    public Integer getWeatherId() {
-        return weatherId;
-    }
-
-    public void setWeatherId(Integer weatherId) {
-        this.weatherId = weatherId;
-    }
-
-    public String getCityId() {
-        return cityId;
-    }
-
-    public void setCityId(String cityId) {
-        this.cityId = cityId;
-    }
-
-    public String getCityName() {
-        return cityName;
-    }
-
-    public void setCityName(String cityName) {
-        this.cityName = cityName;
-    }
-
-    public String getWeatherType() {
-        return weatherType;
-    }
-
-    public void setWeatherType(String weatherType) {
-        this.weatherType = weatherType;
-    }
-
-    public String getForecastWeather() {
-        return forecastWeather;
-    }
-
-    public void setForecastWeather(String forecastWeather) {
-        this.forecastWeather = forecastWeather;
-    }
-
-    public String getLiveWeather() {
-        return liveWeather;
-    }
-
-    public void setLiveWeather(String liveWeather) {
-        this.liveWeather = liveWeather;
-    }
-
-    public LocalDateTime getCreateAt() {
-        return createAt;
-    }
-
-    public void setCreateAt(LocalDateTime createAt) {
-        this.createAt = createAt;
-    }
 }
