@@ -3,7 +3,6 @@ package com.fly.robot.service.impl;
 import com.aliyun.dysmsapi20170525.Client;
 import com.aliyun.dysmsapi20170525.models.SendSmsRequest;
 import com.aliyun.dysmsapi20170525.models.SendSmsResponse;
-import com.aliyun.tea.TeaException;
 import com.aliyun.teaopenapi.models.Config;
 import com.aliyun.teautil.models.RuntimeOptions;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -57,9 +56,13 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public void sendRegisterMsgAuthCode(String phoneNumber) throws Exception {
-        if (userRepository.findByPhone(phoneNumber) != null)
+        User userByPhone = userRepository.findByPhone(phoneNumber);
+        //如果账户已存在并且已被禁用
+        if (userByPhone != null && UserCode.USER_STATUS_DISABLE.equals(userByPhone.getStatus()))
+            throw new RuntimeException("您的手机号已被禁用，请联系管理员");
+        if (userByPhone != null)
             throw new RuntimeException("您的手机号已被注册，请登录");
-        sendAuthCodeMsg(phoneNumber, AliCode.SEND_MSG_REGISTER_MODEL_CODE, getAuthCode(phoneNumber, registerAuthCodeExpiration));
+        sendAuthCodeMsg(phoneNumber, AliCode.SEND_MSG_REGISTER_MODEL_CODE, getAuthCode(phoneNumber, UserCode.REGISTER_AUTH, registerAuthCodeExpiration));
     }
 
     /**
@@ -69,16 +72,19 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public void sendLoginMsgAuthCode(String phoneNumber) throws Exception {
-        if (userRepository.findByPhone(phoneNumber) == null) {
+        User userByPhone = userRepository.findByPhone(phoneNumber);
+        if (userByPhone == null) {
             throw new RuntimeException("您的手机号还没有注册，请先注册再登录");
         }
-        sendAuthCodeMsg(phoneNumber, AliCode.SEND_MSG_LOGIN_MODEL_CODE, getAuthCode(phoneNumber, loginAuthCodeExpiration));
+        if (userByPhone.getStatus().equals(UserCode.USER_STATUS_DISABLE))
+            throw new RuntimeException("您的帐户已被禁用，请联系管理员");
+        sendAuthCodeMsg(phoneNumber, AliCode.SEND_MSG_LOGIN_MODEL_CODE, getAuthCode(phoneNumber, UserCode.LOGIN_AUTH, loginAuthCodeExpiration));
     }
 
     //手机号注册
     @Override
     public void phoneRegister(PhoneRegisterParam phoneRegisterParam) {
-        if (!verifyCode(phoneRegisterParam.getPhone(), phoneRegisterParam.getAuthCode()))
+        if (!verifyCode(phoneRegisterParam.getPhone(), UserCode.REGISTER_AUTH, phoneRegisterParam.getAuthCode()))
             throw new RuntimeException("您的验证码不正确，请重新输入");
         User userByPhone = userRepository.findByPhone(phoneRegisterParam.getPhone());
         if (userByPhone != null)
@@ -89,16 +95,19 @@ public class UserServiceImpl implements UserService {
         LocalDateTime nowTime = LocalDateTime.now();
         user.setCreated(nowTime);
         user.setUpdated(nowTime);
-        String userName = "匿名用户" + new SnowflakeIdUtils(2, 3).nextId();
+        String userName = String.valueOf(new SnowflakeIdUtils(2, 3).nextId());
+        //校验数据库中是否存在该用户名，若存在则重新获取
         while (userRepository.findByUsername(userName) != null) {
-            userName = "匿名用户" + new SnowflakeIdUtils(2, 3).nextId();
+            userName = String.valueOf(new SnowflakeIdUtils(2, 3).nextId());
         }
         user.setUsername(userName);
         user.setNikeName(userName);
         user.setStatus(UserCode.USER_STATUS_ENABLE);
-        redisService.remove(phoneRegisterParam.getPhone());
+        user.setPermission(UserCode.REGULAR_USER_AUTH);
+        user.setSex(UserCode.USER_SEX_NON);
         //TODO 添加密码加密算法
         userRepository.save(user);
+        redisService.remove(phoneRegisterParam.getPhone());
     }
 
     /**
@@ -136,13 +145,13 @@ public class UserServiceImpl implements UserService {
         String token = null;
         User user = userRepository.findByPhone(phone);
         if (user == null)
-            throw new RuntimeException("该用户不存在，检验手机号");
+            throw new RuntimeException("该用户不存在，请检查手机号");
         LOGGER.info("从数据库根据用户名查找的用户信息为：" + user.toString());
         if (UserCode.USER_STATUS_DISABLE.equals(user.getStatus()))
             throw new RuntimeException("您的账户已被封禁");
         token = jwtTokenUtil.generateToken(user);
         userRepository.updateLastLoginTime(user.getUserId(), LocalDateTime.now());
-        redisService.remove(phone);
+        redisService.remove(UserCode.LOGIN_AUTH + phone);
         return token;
     }
 
@@ -200,51 +209,47 @@ public class UserServiceImpl implements UserService {
                 .setSignName(AliCode.SEND_MSG_VERIFICATION_CODE_SIGNATURE)
                 .setTemplateCode(modelCode)
                 .setTemplateParam(objectMapper.writeValueAsString(code));
-        try {
-            SendSmsResponse sendSmsResponse = client.sendSmsWithOptions(sendSmsRequest, new RuntimeOptions());
-            if (sendSmsResponse.getStatusCode() != 200)
-                throw new RuntimeException("发送短信失败，请检查第三方短信服务接口:" + sendSmsResponse.getBody().getMessage());
-            LOGGER.info("发送阿里云短信三方接口返回的消息提示：" + sendSmsResponse.getBody().getMessage());
-        } catch (TeaException error) {
-            LOGGER.info(error.message);
-            com.aliyun.teautil.Common.assertAsString(error.message);
-        } catch (Exception _error) {
-            TeaException error = new TeaException(_error.getMessage(), _error);
-            LOGGER.info(error.message);
-            com.aliyun.teautil.Common.assertAsString(error.message);
-        }
+        SendSmsResponse sendSmsResponse = client.sendSmsWithOptions(sendSmsRequest, new RuntimeOptions());
+        if (sendSmsResponse.getStatusCode() != 200 || !"OK".equals(sendSmsResponse.getBody().getMessage()))
+            throw new RuntimeException("发送短信失败，请检查第三方短信服务接口:" + sendSmsResponse.getBody().getMessage());
+        LOGGER.info("发送阿里云短信三方接口返回的消息提示：" + sendSmsResponse.getBody().getMessage());
     }
 
     /**
      * 获取验证码
      *
-     * @param phoneNumber 手机号
+     * @param phoneNumber  手机号
+     * @param authCodeType 验证码类型
+     * @param expire       验证码过期时间
      * @return
      */
-    private String getAuthCode(String phoneNumber, Long expire) {
-        String authCode = redisService.get(phoneNumber);
+    private String getAuthCode(String phoneNumber, String authCodeType, Long expire) {
+        String authCodeKey = authCodeType + phoneNumber;
+        String authCode = redisService.get(authCodeKey);
         if (authCode != null) {
             return authCode;
         }
         Random random = new Random();
         int code = random.nextInt(900000) + 100000;
-        redisService.set(phoneNumber, String.valueOf(code));
-        redisService.expire(phoneNumber, expire);
+        redisService.set(authCodeKey, String.valueOf(code));
+        redisService.expire(authCodeKey, expire);
         return String.valueOf(code);
     }
 
     /**
      * 校验验证码
      *
-     * @param phoneNumber 手机号
-     * @param code        验证码
+     * @param phoneNumber  手机号
+     * @param authCodeType 验证码类型
+     * @param code         验证码
      * @return
      */
     @Override
-    public boolean verifyCode(String phoneNumber, String code) {
-        if (redisService.get(phoneNumber) == null)
+    public boolean verifyCode(String phoneNumber, String authCodeType, String code) {
+        String authCodeKey = authCodeType + phoneNumber;
+        if (redisService.get(authCodeKey) == null)
             return false;
-        return code.equals(redisService.get(phoneNumber));
+        return code.equals(redisService.get(authCodeKey));
     }
 
 }

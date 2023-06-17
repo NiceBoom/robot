@@ -10,6 +10,7 @@ import com.fly.robot.dto.UserLoginParam;
 import com.fly.robot.entity.User;
 import com.fly.robot.pojo.UserCode;
 import com.fly.robot.service.UserService;
+import com.fly.robot.util.JwtTokenUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
@@ -30,16 +31,20 @@ import javax.validation.constraints.Pattern;
 @Component
 @Slf4j
 @Api(tags = "用户控制")
+@Validated
 public class UserController {
 
     @Autowired
     private UserService userService;
+    @Autowired
+    private JwtTokenUtil jwtTokenUtil;
 
     private final static Logger LOGGER = LoggerFactory.getLogger(UserController.class);
 
     @ApiOperation("发送注册验证码")
     @GetMapping("/sendRegisterMsgAuthCode")
-    CommonResult sendRegisterMsgAuthCode(@RequestParam("phone")
+    CommonResult sendRegisterMsgAuthCode(@Validated
+                                         @RequestParam("phone")
                                          @Pattern(regexp = "^1[3456789]\\d{9}$", message = "手机号格式不正确")
                                          @NotEmpty(message = "手机号不能为空")
                                          String phone) {
@@ -92,7 +97,7 @@ public class UserController {
     @ApiOperation("验证码登录")
     @PostMapping("/authCodeLogin")
     CommonResult authCodeLogin(@Validated @RequestBody PhoneLoginParam phoneLoginParam) {
-        if (!userService.verifyCode(phoneLoginParam.getPhone(), phoneLoginParam.getAuthCode()))
+        if (!userService.verifyCode(phoneLoginParam.getPhone(), UserCode.LOGIN_AUTH, phoneLoginParam.getAuthCode()))
             return CommonResult.failed("验证码错误，请重试。");
         try {
             return CommonResult
@@ -136,9 +141,12 @@ public class UserController {
     //只有管理员 1 与超级管理员 2 能访问这里,并返回用户信息，测试鉴权用
     @PostMapping("/authTest")
     @JwtAuthenticated(value = {UserCode.ADMINISTRATOR_USER_AUTH, UserCode.SUPER_ADMINISTRATOR_USER_AUTH})
-    String authTest(@RequestBody User user) {
-        User byUsername = userRepository.findByUsername(user.getUsername());
+    CommonResult authTest(@RequestHeader("Authorization") String token) {
+
+        User byUsername = userRepository.findByUsername(jwtTokenUtil.getUserNameFromToken(token));
+        if (byUsername == null)
+            return CommonResult.failed("该用户不存在");
         LOGGER.info(byUsername.toString());
-        return byUsername.toString();
+        return CommonResult.success(byUsername.toString());
     }
 }
